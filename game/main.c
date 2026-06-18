@@ -7,6 +7,7 @@ mgs* mg_data;
 hpo potions_data;
 hpo potionm_data;
 hpo potionb_data;
+int spell_count;
 
 
 int main() {

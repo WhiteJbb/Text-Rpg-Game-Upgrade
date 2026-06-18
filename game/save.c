@@ -14,6 +14,10 @@ void user_load() {
 
 	fscanf(fp, "%d %s %d %d %d %d %d %d %d %d %d %d %d %d %d ", &user_data.first, user_data.name, &user_data.gold, &user_data.exp, &user_data.level, &user_data.hp, &user_data.maxhp, &user_data.mp, &user_data.maxmp, &potions_data.count, &potionm_data.count, &potionb_data.count, &potions_data.healing, &potionm_data.healing, &potionb_data.healing);
 
+	/* 보유 마법 비트마스크 (구버전 세이브엔 없음 -> 파이어볼만 보유로 호환) */
+	if (fscanf(fp, "%d", &user_data.spells) != 1)
+		user_data.spells = 1;
+
 	fclose(fp);
 
 	if (user_data.first == 0) {
@@ -85,12 +89,22 @@ void magic_load() {
 		mgs* tmp = realloc(mg_data, sizeof(mgs) * (i + 1));
 		if (tmp == NULL) break;
 		mg_data = tmp;
-		if (fscanf(fp, "%s %d %d", mg_data[i].name, &mg_data[i].mp, &mg_data[i].dam) != 3)
+		if (fscanf(fp, "%s %d %d %d", mg_data[i].name, &mg_data[i].mp, &mg_data[i].dam, &mg_data[i].price) != 4)
 			break;
+		mg_data[i].learned = 0;
 		i++;
 	}
 
 	fclose(fp);
+	spell_count = i;
+
+	/* 보유(학습) 상태를 user_data.spells 비트마스크에서 복원. 파이어볼(0)은 항상 보유. */
+	for (int j = 0; j < spell_count; j++)
+		mg_data[j].learned = (user_data.spells >> j) & 1;
+	if (spell_count > 0) {
+		mg_data[0].learned = 1;
+		user_data.spells |= 1;
+	}
 }
 
 
@@ -111,6 +125,7 @@ void new_user() {
 	user_data.mp = 100;
 	user_data.maxmp = 100;
 	user_data.gold = 0;
+	user_data.spells = 1;   /* 파이어볼만 보유하고 시작 */
 	potions_data.count = 3;
 	potionm_data.count = 1;
 	potionb_data.count = 0;
@@ -136,6 +151,7 @@ void write_save_files() {
 	if (fp == NULL) return;
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
+	fprintf(fp, "%d ", user_data.spells);
 	fclose(fp);
 
 	fp = open_or_warn(STAT_PATH, "w");
@@ -182,6 +198,7 @@ void clear() {
 	user_data.mp = 0;
 	user_data.maxmp = 0;
 	user_data.gold = 0;
+	user_data.spells = 1;
 	potions_data.count = 0; potions_data.healing = POTION_S_HEAL;
 	potionm_data.count = 0; potionm_data.healing = POTION_M_HEAL;
 	potionb_data.count = 0; potionb_data.healing = POTION_L_HEAL;
