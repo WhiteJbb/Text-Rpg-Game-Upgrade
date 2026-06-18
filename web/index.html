@@ -3,61 +3,147 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>행성: 지구 — Text RPG</title>
+<title>행성 : 지구 — Text RPG</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css" />
 <style>
-  :root { --crt: #33ff66; }
-  html, body {
-    height: 100%; margin: 0;
-    background: radial-gradient(circle at 50% 30%, #0c160c 0%, #050805 70%, #000 100%);
-    color: var(--crt);
-    font-family: "Consolas", "D2Coding", "Courier New", monospace;
+  :root{
+    --void:#04060a; --bezel:#15181d; --bezel-hi:#3b414a; --bezel-lo:#070809;
+    --screen:#02110a; --p:#5cf08c; --p-bright:#c6ffdb; --p-dim:#2b6f48;
+    --pix:'Galmuri11','D2Coding','Courier New',monospace;
   }
-  body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 10px; }
-  h1 { margin: 8px 0 0; font-size: 22px; letter-spacing: 2px; text-shadow: 0 0 8px var(--crt); }
-  #frame {
-    position: relative; width: 860px; max-width: 95vw;
-    padding: 14px; border-radius: 10px;
-    background: #000; border: 2px solid #1f5e33;
-    box-shadow: 0 0 40px rgba(51,255,102,.18), inset 0 0 60px rgba(51,255,102,.06);
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;background:var(--void);overflow:hidden;}
+  body{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:100vh;
+    font-family:var(--pix);color:var(--p);
+    /* 우주 배경: 깊은 그라데이션 + 옅은 별 */
+    background:
+      radial-gradient(1px 1px at 18% 22%, rgba(255,255,255,.7), transparent),
+      radial-gradient(1px 1px at 72% 16%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 41% 71%, rgba(180,255,210,.6), transparent),
+      radial-gradient(1px 1px at 87% 63%, rgba(255,255,255,.45), transparent),
+      radial-gradient(1px 1px at 9% 81%, rgba(255,255,255,.4), transparent),
+      radial-gradient(2px 2px at 60% 84%, rgba(150,255,190,.35), transparent),
+      radial-gradient(circle at 50% -10%, #0a1622 0%, #05080d 45%, #020308 100%);
   }
-  /* CRT 스캔라인 + 곡면 비네팅 */
-  #frame::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
-    background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.28) 2px 4px);
-    box-shadow: inset 0 0 120px rgba(0,0,0,.6);
+  /* 타이틀 */
+  .title{
+    margin:0;font-size:30px;letter-spacing:.18em;color:var(--p-bright);
+    text-shadow:0 0 6px var(--p),0 0 18px rgba(92,240,140,.6);
   }
-  .xterm { padding: 4px; }
-  #hint { font-size: 12px; color: #6abf7a; opacity: .8; }
-  a { color: #6abf7a; }
+  .title .cur{display:inline-block;width:.62em;height:1em;margin-left:.12em;
+    background:var(--p);vertical-align:-2px;animation:blink 1.05s step-end infinite;}
+  @keyframes blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+
+  /* 모니터 베젤(실제 하드웨어 느낌) */
+  .monitor{
+    position:relative;padding:26px 26px 34px;border-radius:22px;
+    background:linear-gradient(180deg,var(--bezel-hi) -40%,var(--bezel) 18%,var(--bezel-lo) 130%);
+    box-shadow:
+      0 2px 0 rgba(255,255,255,.06) inset,
+      0 -3px 14px rgba(0,0,0,.7) inset,
+      0 26px 60px rgba(0,0,0,.65),
+      0 0 0 2px #0c0e11;
+  }
+  .brand{
+    position:absolute;left:0;right:0;bottom:11px;text-align:center;
+    font-size:11px;letter-spacing:.32em;color:#5a6470;text-shadow:0 1px 0 #000;
+  }
+  .led{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:10px;
+    background:var(--p);box-shadow:0 0 8px var(--p);vertical-align:1px;animation:pulse 2.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+  /* 스크린 유리: 곡면 비네팅 + 인광 + 스캔라인 */
+  .screen{
+    position:relative;padding:14px 16px;border-radius:14px/18px;background:var(--screen);
+    box-shadow:0 0 0 1px #000, inset 0 0 60px rgba(0,0,0,.85), inset 0 0 18px rgba(92,240,140,.12);
+    overflow:hidden;animation:poweron .7s ease-out both;
+  }
+  @keyframes poweron{
+    0%{transform:scaleY(.006);filter:brightness(5);opacity:0}
+    36%{transform:scaleY(.04);opacity:1}
+    70%{transform:scaleY(1);filter:brightness(2)}
+    100%{transform:scaleY(1);filter:brightness(1)}
+  }
+  /* 스캔라인 + 화면 글로우(텍스트 위 오버레이) */
+  .screen::after{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px);
+    box-shadow:inset 0 0 100px rgba(0,0,0,.55);mix-blend-mode:multiply;
+  }
+  /* 유리 반사 하이라이트 */
+  .screen::before{
+    content:"";position:absolute;left:-30%;top:-60%;width:80%;height:120%;pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(180,255,210,.07), transparent 60%);transform:rotate(8deg);
+  }
+  #terminal{position:relative;z-index:1;}
+  .xterm{padding:0;}
+  /* 인광 블룸: 터미널 글자에 은은한 글로우 */
+  #terminal .xterm-rows{text-shadow:0 0 4px rgba(92,240,140,.45);}
+
+  /* 상태바(인게임 OS 느낌) */
+  .statusbar{
+    display:flex;gap:18px;align-items:center;font-size:12px;letter-spacing:.08em;color:var(--p-dim);
+    border:1px solid #11321f;border-radius:7px;padding:7px 14px;background:rgba(6,18,11,.6);
+  }
+  .statusbar b{color:var(--p);font-weight:normal;}
+
+  @media (max-width:820px){ .monitor{transform:scale(.78);} .title{font-size:24px;} }
+  @media (max-width:560px){ .monitor{transform:scale(.5);} body{gap:6px;} }
+  @media (prefers-reduced-motion:reduce){
+    .screen{animation:none} .title .cur{animation:none} .led{animation:none}
+  }
 </style>
 </head>
 <body>
-  <h1>🌍 행성 : 지구</h1>
-  <div id="frame"><div id="terminal"></div></div>
-  <div id="hint">메뉴 번호 + Enter로 플레이합니다 · 새로고침하면 처음부터 (세이브는 브라우저 메모리)</div>
+  <h1 class="title">행성 : 지구<span class="cur"></span></h1>
+
+  <div class="monitor">
+    <div class="screen"><div id="terminal"></div></div>
+    <div class="brand">EARTH TERMINAL · 지구 OS v1.0<span class="led"></span></div>
+  </div>
+
+  <div class="statusbar">
+    <span><b>●</b> ONLINE</span>
+    <span>메뉴 번호 + <b>Enter</b></span>
+    <span>새로고침 = 처음부터</span>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
   <script>
-    const term = new Terminal({
-      cols: 80, rows: 30, cursorBlink: true, convertEol: true,
-      fontFamily: '"Consolas","D2Coding","Courier New",monospace', fontSize: 15,
-      theme: { background: "#000000", foreground: "#33ff66", cursor: "#33ff66", cursorAccent: "#000000" }
-    });
-    term.open(document.getElementById("terminal"));
-    term.focus();
-    document.addEventListener("click", () => term.focus());
+    (async () => {
+      // 비트맵 폰트가 로드된 뒤에 터미널을 열어야 글자 정렬이 맞는다
+      try { await document.fonts.load('16px "Galmuri11"'); await document.fonts.ready; } catch (e) {}
 
-    // Emscripten 모듈 설정: 출력은 터미널로, 입력은 UTF-8 바이트 큐로
-    var Module = {
-      inq: [],
-      termWrite: (s) => term.write(s),
-      print: (s) => term.write(s + "\r\n"),
-      printErr: (s) => console.error(s),
-    };
-    const _enc = new TextEncoder();
-    term.onData((d) => { for (const b of _enc.encode(d)) Module.inq.push(b); });
+      const term = new Terminal({
+        cols: 80, rows: 28, cursorBlink: true, convertEol: true,
+        fontFamily: '"Galmuri11","D2Coding","Courier New",monospace', fontSize: 16, lineHeight: 1.0,
+        theme: {
+          background: "#02110a", foreground: "#5cf08c", cursor: "#9dffc0",
+          cursorAccent: "#02110a", selectionBackground: "#1f7a44",
+          black:"#02110a", green:"#5cf08c", brightGreen:"#c6ffdb", white:"#bfeccb", brightWhite:"#eafff1"
+        }
+      });
+      term.open(document.getElementById("terminal"));
+      term.focus();
+      document.addEventListener("click", () => term.focus());
+
+      // Emscripten 모듈: 출력은 터미널, 입력은 UTF-8 바이트 큐
+      window.Module = {
+        inq: [],
+        termWrite: (s) => term.write(s),
+        print: (s) => term.write(s + "\r\n"),
+        printErr: (s) => console.error(s),
+      };
+      const enc = new TextEncoder();
+      term.onData((d) => { for (const b of enc.encode(d)) Module.inq.push(b); });
+
+      // 폰트/터미널 준비 후 게임 로드
+      const s = document.createElement("script");
+      s.src = "game.js";
+      document.body.appendChild(s);
+    })();
   </script>
-  <script src="game.js"></script>
 </body>
 </html>
