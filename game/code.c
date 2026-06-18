@@ -13,6 +13,11 @@
 #define MONSTERS_PATH  "test/monsters.txt"
 #define MAGIC_PATH     "test/magicspell.txt"
 
+/* 전투/조우 결과 신호 (제어 흐름 정상화: 재귀 호출 대신 값을 반환) */
+#define COMBAT_CONTINUE 0   /* 탐험 계속 (다음 몬스터 조우) */
+#define COMBAT_TO_MENU  1   /* 메인 메뉴로 복귀 */
+#define COMBAT_ONGOING  2   /* 전투 진행 중 (같은 몬스터 계속) */
+
 typedef struct user {
 	int first;
 	char name[20];
@@ -81,17 +86,17 @@ void new_user();
 int menu();
 void end();
 void auto_save(int x, int y, int a, int b);  // 매개변수 추가
-void monster(int num, int region);           // 매개변수 추가
-void damage(int dam, int num);               // 매개변수 추가
+int monster(int num);
+int damage(int dam, int num);
 void shop_choose();
 void potion_shop();
 void magic_shop();
-void fight(int num, int reg);                // 매개변수 추가
-void fight_pouse(int num, int reg);          // 매개변수 추가
-void attack(int num, int reg);               // 매개변수 추가
+int fight(int num);
+void fight_pouse(int num);
+int attack(int num);
 void magic();
 void stat_view();
-void hp_out(int num, int reg);               // 매개변수 추가
+int hp_out(int num);
 void stat_set();
 void slot_machine();
 void help();
@@ -583,27 +588,28 @@ void adventure(int region) {
 			printf(":: 몬스터의 초원 ::\n");
 			printf(":: 곳곳에서 섬뜩한 눈빛이 느껴집니다... ::\n");
 			if (num <= 5000) {
-				monster(0, 1);
+				if (monster(0) == COMBAT_TO_MENU) return;
 				break;
 			}
 			if (num > 5000 && num <= 8000) {
-				monster(1, 1);
+				if (monster(1) == COMBAT_TO_MENU) return;
 				break;
 			}
 			if (num > 8000 && num <= 9900) {
-				monster(2, 1);
+				if (monster(2) == COMBAT_TO_MENU) return;
 				break;
 			}
 			if (num > 9900) {
-				monster(3, 1);
+				if (monster(3) == COMBAT_TO_MENU) return;
 				break;
 			}
 			break;
 		case 5:
 			return;
 		default:
-			printf(":: 다시 입력해주세요 ::");
-			break;
+			printf(":: 아직 갈 수 없는 지역입니다 ::\n");
+			system("pause");
+			return;
 		}
 
 	}
@@ -696,42 +702,42 @@ void auto_save(int x, int y, int a, int b) {
 
 }
 
-void monster(int num, int region) {
+int monster(int num) {
 	int sel, run;
 	run = rand() % 100 + 1;
-	printf("-------------------------------------\n");
-	printf("\n:: %s(이)가 나타났다 ::\n\n", mob_data[num].name);
-	printf("-------------------------------------\n");
-	printf(":: 무엇을 하시겠습니까? ::\n");
-	printf("\n1. 싸운다 , 2. 도망간다 , 3. 아이템사용 : ");
-	scanf("%d", &sel);
-	switch (sel) {
-	case 1:
-		fight(num, region);
-		break;
-	case 2:
-		if (run >= 30) {
-			printf("\n:: 무사히 도망쳤다 ::\n");
-			inside_save();
-			system("pause");
-			system("cls");
-			main();
+	while (1) {
+		printf("-------------------------------------\n");
+		printf("\n:: %s(이)가 나타났다 ::\n\n", mob_data[num].name);
+		printf("-------------------------------------\n");
+		printf(":: 무엇을 하시겠습니까? ::\n");
+		printf("\n1. 싸운다 , 2. 도망간다 , 3. 아이템사용 : ");
+		scanf("%d", &sel);
+		switch (sel) {
+		case 1:
+			return fight(num);
+		case 2:
+			if (run >= 30) {
+				printf("\n:: 무사히 도망쳤다 ::\n");
+				inside_save();
+				system("pause");
+				system("cls");
+				return COMBAT_TO_MENU;
+			}
+			else {
+				printf("\n:: 도망치지 못했다 ::\n");
+				Sleep(500);
+				return fight(num);
+			}
+		case 3:
+			potion_use();
+			break;   /* 회복 후 다시 조우 프롬프트로 돌아감 */
+		default:
+			break;
 		}
-		else if (run < 30) {
-			printf("\n:: 도망치지 못했다 ::\n");
-			Sleep(500);
-			fight(num, region);
-		}
-		break;
-	case 3:
-		potion_use();
-		break;
 	}
 }
 
-void damage(int dam, int num) {
-	int hurt;
-	hurt = dam;
+int damage(int dam, int num) {
 	user_data.hp -= dam;
 	if (user_data.hp <= 0 && user_data.level != 1) {
 		system("cls");
@@ -749,7 +755,7 @@ void damage(int dam, int num) {
 		printf("\n-------------------------------------\n");
 		system("pause");
 		system("cls");
-		main();
+		return 1;
 	}
 	else if (user_data.hp <= 0 && user_data.level == 1) {
 		system("cls");
@@ -764,12 +770,12 @@ void damage(int dam, int num) {
 		printf("\n-------------------------------------\n");
 		system("pause");
 		system("cls");
-		main();
+		return 1;
 	}
-	else
-		printf("-------------------------------------\n\n");
+	printf("-------------------------------------\n\n");
 	printf(":: HP - %d ::\n", dam);
 	printf("\n-------------------------------------\n");
+	return 0;
 }
 
 void potion_earn(int x, int y, int z) {
@@ -917,7 +923,7 @@ void potion_use() {
 		case 4:
 			printf(":: 돌아갑니다. ::\n");
 			save();
-			adventure_control();
+			return;
 		}
 
 	}
@@ -941,7 +947,6 @@ void item_show() {
 	printf("-------------------------------------\n");
 	system("pause");
 	system("cls");
-	menu();
 }
 
 void shop_choose() {
@@ -965,8 +970,7 @@ void shop_choose() {
 			break;
 		case 3:
 			system("cls");
-			main();
-			break;
+			return;
 		default:
 			printf(":: 다시 입력해주세요 ::");
 			break;
@@ -1050,8 +1054,7 @@ void potion_shop() {
 			printf("\n-------------------------------------\n");
 			save();
 			system("cls");
-			main();
-			break;
+			return;
 		}
 
 	}
@@ -1063,7 +1066,7 @@ void potion_shop() {
 
 }*/
 
-void fight(int num, int reg) {
+int fight(int num) {
 	int sel = 0;
 
 	while (1) {
@@ -1077,22 +1080,25 @@ void fight(int num, int reg) {
 		printf("------------------------------------------\n");
 		printf("1. 공격, 2. 마법, 3. 아이템사용 : ");
 		scanf("%d", &sel);
+		int result = COMBAT_ONGOING;
 		switch (sel) {
 		case 1:
-			attack(num, reg);
+			result = attack(num);
 			break;
 		case 2:
 			//magic();
 			break;
 		case 3:
-			fight_pouse(num, reg);
+			fight_pouse(num);
+			break;
 		}
-		hp_out(num, reg);
+		if (result == COMBAT_CONTINUE || result == COMBAT_TO_MENU)
+			return result;
 	}
 
 }
 
-void attack(int num, int reg) {
+int attack(int num) {
 	int dam = mob_data[num].dam - stat_data.def;
 	if (dam < 0)
 		dam = 0;
@@ -1111,14 +1117,16 @@ void attack(int num, int reg) {
 		printf("------------------------------------------\n");
 		mob_data[num].hp -= mob_data[num].hp;
 	}
-	hp_out(num, reg);
+	if (hp_out(num))
+		return COMBAT_CONTINUE;   /* 몬스터 처치 -> 반격 생략, 탐험 계속 */
 	Sleep(500);
 	printf("------------------------------------------\n");
 	printf("\n:: %s의 공격! ::\n\n", mob_data[num].name);
 	Sleep(500);
-	damage(dam, num);
+	if (damage(dam, num))
+		return COMBAT_TO_MENU;    /* 플레이어 사망 -> 메뉴 복귀 */
 	system("pause");
-
+	return COMBAT_ONGOING;
 }
 
 /*void magic(int num, int reg) {
@@ -1126,7 +1134,7 @@ void attack(int num, int reg) {
 }
 */
 
-void fight_pouse(int num, int reg) {
+void fight_pouse(int num) {
 	int sub;
 	int sel;
 	while (1) {
@@ -1244,13 +1252,13 @@ void fight_pouse(int num, int reg) {
 		case 4:
 			printf(":: 돌아갑니다. ::\n");
 			save();
-			fight(num, reg);
+			return;
 		}
 
 	}
 }
 
-void hp_out(int num, int reg) {
+int hp_out(int num) {
 
 	if (mob_data[num].hp <= 0) {
 		printf("\n:: %s을 죽였습니다 ::\n", mob_data[num].name);
@@ -1259,8 +1267,9 @@ void hp_out(int num, int reg) {
 		system("pause");
 		mob_data[num].hp = mob_data[num].maxhp;
 		system("cls");
-		adventure(reg);
+		return 1;
 	}
+	return 0;
 }
 
 void slot_machine() {
@@ -1285,7 +1294,7 @@ void slot_machine() {
 		printf(":: 보유하고 계신 Gold가 없습니다 ::\n");
 		system("pause");
 		system("cls");
-		main();
+		return;
 	}
 	else if (user_data.gold > 0) {
 		printf("얼마를 넣으시겠습니까? - %d Gold 보유 : ", user_data.gold);
@@ -1320,7 +1329,7 @@ void slot_machine() {
 				inside_save();
 				system("pause");
 				system("cls");
-				main();
+				return;
 			}
 			else {
 				Sleep(1000);
@@ -1330,7 +1339,7 @@ void slot_machine() {
 				inside_save();
 				system("pause");
 				system("cls");
-				main();
+				return;
 			}
 		}
 	}
