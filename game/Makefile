@@ -8,7 +8,8 @@
 # Windows에서는 MinGW(gcc) + Git Bash/MSYS 환경을 권장. (rm 사용)
 
 CC      = gcc
-CFLAGS  = -std=c11 -Wall -Wextra
+# 한글(UTF-8) 깨짐 방지: 소스/실행 문자셋을 UTF-8로 고정 (gcc 기본값이지만 명시)
+CFLAGS  = -std=c11 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8
 SRCS    = main.c util.c save.c player.c battle.c item.c
 OBJS    = $(SRCS:.c=.o)
 TARGET  = game.exe

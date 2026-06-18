@@ -75,7 +75,7 @@ make
 2. 마법 상점(`magic_shop`) 구현 — 현재 주석 스텁.
 3. 추가 던전(늑대의 굴 등)·몬스터 확장.
 4. 크로스 플랫폼(`windows.h`/`system` 추상화).
-5. 데이터 인코딩 통일(`monsters.txt` CP949 → UTF-8).
+5. ✅ **데이터 인코딩 통일 완료** — `monsters.txt`를 CP949→UTF-8로 변환, `main()`에서 콘솔을 UTF-8로 설정(`SetConsoleOutputCP`)하여 한글 깨짐 수정. (MSVC 빌드 시 `/utf-8` 필요)
 
 ---
 

@@ -10,6 +10,10 @@ hpo potionb_data;
 
 
 int main() {
+	/* Windows 콘솔 입출력을 UTF-8로 설정 — 소스/데이터가 모두 UTF-8이라
+	   한글이 깨지지 않게 한다. (gcc는 기본 UTF-8, MSVC는 /utf-8 옵션 필요) */
+	SetConsoleOutputCP(CP_UTF8);
+	SetConsoleCP(CP_UTF8);
 	srand((int)time(NULL));
 	user_load();
 	mob_load();

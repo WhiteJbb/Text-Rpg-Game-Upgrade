@@ -25,11 +25,12 @@
 cd game
 make                 # game.exe 생성 (gcc / MinGW)
 # 또는 직접 컴파일:
-gcc -std=c11 -Wall -Wextra main.c util.c save.c player.c battle.c item.c -o game.exe
+gcc -std=c11 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c util.c save.c player.c battle.c item.c -o game.exe
 ./game.exe
 ```
 
-- **Visual Studio**: `game/`의 모든 `.c`를 한 프로젝트에 추가해 빌드하고, **작업 디렉터리를 `game/`로** 설정하세요.
+- **한글 출력**: 소스·데이터 파일은 모두 UTF-8이며, 실행 시 `main()`에서 콘솔을 UTF-8로 설정(`SetConsoleOutputCP`)합니다. Windows 기본 콘솔 코드페이지가 949(CP949)여도 한글이 정상 출력됩니다.
+- **Visual Studio**: `game/`의 모든 `.c`를 한 프로젝트에 추가해 빌드하고, **작업 디렉터리를 `game/`로** 설정하세요. 한글이 깨지면 프로젝트 속성 → C/C++ → 명령줄에 **`/utf-8`** 옵션을 추가하세요(UTF-8 소스를 올바르게 해석).
 - 필요 데이터(이미 `game/test/`에 포함): `monsters.txt`, `magicspell.txt`(콘텐츠) / `data.txt`, `stat.txt`(저장, 없으면 자동 생성).
 
 ## 프로젝트 구조
