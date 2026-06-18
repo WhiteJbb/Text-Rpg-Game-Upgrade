@@ -5,6 +5,14 @@
 #include <time.h>
 #include <windows.h>
 
+/* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
+   - 기존에는 "C:\\test\\..." 절대 경로로 고정되어 다른 PC에서 실행이 불가능했음
+   - 게임은 game/ 폴더(= test/ 하위 폴더가 있는 위치)에서 실행해야 함 */
+#define DATA_PATH      "test/data.txt"
+#define STAT_PATH      "test/stat.txt"
+#define MONSTERS_PATH  "test/monsters.txt"
+#define MAGIC_PATH     "test/magicspell.txt"
+
 typedef struct user {
 	int first;
 	char name[20];
@@ -54,6 +62,7 @@ typedef struct magicspell {
 	int dam;
 }mgs;
 
+FILE* open_or_warn(const char* path, const char* mode);
 void clear();
 void user_load();
 void mob_load();
@@ -97,6 +106,16 @@ hpo potionm_data;
 hpo potionb_data;
 
 int finish;
+
+/* 파일을 열고, 실패하면 경고 메시지를 출력한 뒤 NULL을 반환한다.
+   호출부에서 NULL 여부를 확인해 복구 방식을 결정한다. */
+FILE* open_or_warn(const char* path, const char* mode) {
+	FILE* fp = fopen(path, mode);
+	if (fp == NULL) {
+		printf(":: [오류] 파일을 열 수 없습니다: %s ::\n", path);
+	}
+	return fp;
+}
 
 void cheat() {
 	stat_data.point += 100;
@@ -193,7 +212,12 @@ void user_load() {
 
 	FILE* fp;
 
-	fp = fopen("C:\\test\\data.txt", "r");
+	fp = open_or_warn(DATA_PATH, "r");
+	if (fp == NULL) {
+		/* 저장 파일이 없으면 첫 실행으로 간주하고 새 캐릭터를 생성한다 */
+		new_user();
+		return;
+	}
 
 	fscanf(fp, "%d %s %d %d %d %d %d %d %d %d %d %d %d %d %d ", &user_data.first, user_data.name, &user_data.gold, &user_data.exp, &user_data.level, &user_data.hp, &user_data.maxhp, &user_data.mp, &user_data.maxmp, &potions_data.count, &potionm_data.count, &potionb_data.count, &potions_data.healing, &potionm_data.healing, &potionb_data.healing);
 
@@ -212,7 +236,11 @@ void user_load() {
 void stat_load() {
 	FILE* fp;
 
-	fp = fopen("C:\\test\\stat.txt", "r");
+	fp = open_or_warn(STAT_PATH, "r");
+	if (fp == NULL) {
+		/* 스텟 파일이 없으면 기본값(전역 0 초기화 / new_user 설정)을 유지한다 */
+		return;
+	}
 
 	fscanf(fp, "%d %d %d %f %d %d %d ", &stat_data.power, &stat_data.speed, &stat_data.def, &stat_data.crit, &stat_data.magic, &stat_data.luck, &stat_data.point);
 
@@ -227,7 +255,11 @@ void mob_load() {
 
 	FILE* fp;
 
-	fp = fopen("C:\\test\\monsters.txt", "r");
+	fp = open_or_warn(MONSTERS_PATH, "r");
+	if (fp == NULL) {
+		printf(":: 몬스터 데이터를 불러올 수 없어 게임을 종료합니다 ::\n");
+		exit(1);
+	}
 
 	while (!feof(fp)) {
 		mob_data = realloc(mob_data, sizeof(mob) * (i + 1));
@@ -246,7 +278,11 @@ void magic_load() {
 
 	FILE* fp;
 
-	fp = fopen("C:\\test\\magicspell.txt", "r");
+	fp = open_or_warn(MAGIC_PATH, "r");
+	if (fp == NULL) {
+		printf(":: 마법 데이터를 불러올 수 없어 게임을 종료합니다 ::\n");
+		exit(1);
+	}
 
 	while (!feof(fp)) {
 		mg_data = realloc(mg_data, sizeof(mgs) * (i + 1));
@@ -431,7 +467,8 @@ void new_user() {
 void save() {
 	FILE* fp;
 
-	fp = fopen("C:\\test\\data.txt", "w");
+	fp = open_or_warn(DATA_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 
@@ -439,7 +476,8 @@ void save() {
 
 	fclose(fp);
 
-	fp = fopen("C:\\test\\stat.txt", "w");
+	fp = open_or_warn(STAT_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
 
@@ -455,7 +493,8 @@ void save() {
 void inside_save() {
 	FILE* fp;
 
-	fp = fopen("C:\\test\\data.txt", "w");
+	fp = open_or_warn(DATA_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 
@@ -463,7 +502,8 @@ void inside_save() {
 
 	fclose(fp);
 
-	fp = fopen("C:\\test\\stat.txt", "w");
+	fp = open_or_warn(STAT_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
 
@@ -491,7 +531,8 @@ void clear() {
 
 	FILE* fp;
 
-	fp = fopen("C:\\test\\data.txt", "w");
+	fp = open_or_warn(DATA_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 
@@ -499,7 +540,8 @@ void clear() {
 
 	fclose(fp);
 
-	fp = fopen("C:\\test\\stat.txt", "w");
+	fp = open_or_warn(STAT_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
 
@@ -636,7 +678,8 @@ void auto_save(int x, int y, int a, int b) {
 
 	FILE* fp;
 
-	fp = fopen("C:\\test\\data.txt", "w");
+	fp = open_or_warn(DATA_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %s %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp);
 
@@ -644,7 +687,8 @@ void auto_save(int x, int y, int a, int b) {
 
 	fclose(fp);
 
-	fp = fopen("C:\\test\\stat.txt", "w");
+	fp = open_or_warn(STAT_PATH, "w");
+	if (fp == NULL) return;
 
 	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
 

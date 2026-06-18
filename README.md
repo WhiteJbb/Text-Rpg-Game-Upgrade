@@ -49,18 +49,22 @@
 - **운영체제**: Windows
 - **개발 환경**: Visual Studio
 - **언어**: C
-- **필요 파일**: 
-  - `C:\test\data.txt` - 유저 데이터
-  - `C:\test\stat.txt` - 스텟 데이터
-  - `C:\test\monsters.txt` - 몬스터 정보
-  - `C:\test\magicspell.txt` - 마법 정보
+- **필요 파일** (실행 폴더 기준 상대 경로 — `game/` 에서 실행):
+  - `test/data.txt` - 유저 데이터 (저장 파일, 없으면 자동 생성)
+  - `test/stat.txt` - 스텟 데이터 (저장 파일, 없으면 자동 생성)
+  - `test/monsters.txt` - 몬스터 정보 (게임 콘텐츠)
+  - `test/magicspell.txt` - 마법 정보 (게임 콘텐츠)
 
 ## 설치 및 실행
 
-1. `C:\test\` 폴더 생성
-2. `game/test/` 폴더의 모든 txt 파일을 `C:\test\`로 복사
-3. Visual Studio에서 `game/code.c` 컴파일
-4. 실행 파일 실행
+> 데이터 파일은 더 이상 `C:\test\` 절대 경로를 쓰지 않고, 실행 폴더 기준 `test/` 상대 경로를 사용합니다. (refactor 브랜치 0단계)
+
+1. 저장소를 클론한 뒤 `game/` 폴더로 이동합니다. (`test/` 하위 폴더에 txt 파일이 이미 들어 있습니다)
+2. 컴파일합니다.
+   - GCC(MinGW): `gcc -std=c11 -Wall -Wextra -o game.exe code.c`
+   - 또는 Visual Studio에서 `game/code.c` 빌드
+3. **반드시 `game/` 폴더에서** 실행합니다 (`test/` 폴더가 보이는 위치).
+   - `./game.exe`
 
 ## 문제점
 
