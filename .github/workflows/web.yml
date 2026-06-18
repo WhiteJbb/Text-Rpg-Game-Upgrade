@@ -3,7 +3,7 @@ name: web build & deploy
 # main 푸시 시 빌드+배포, feature/web 푸시 시 빌드만(검증), 수동 실행 가능
 on:
   push:
-    branches: [ main, feature/web ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
