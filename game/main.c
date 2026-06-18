@@ -16,6 +16,7 @@ int equip_count;
 int main() {
 	init_console();   /* 콘솔 UTF-8 설정 (플랫폼별 래퍼) */
 	srand((int)time(NULL));
+	ensure_data_files();   /* 데이터 파일 없으면 내장 기본값으로 생성 (단일 exe 지원) */
 	user_load();
 	mob_load();
 	stat_load();

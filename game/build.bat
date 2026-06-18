@@ -7,7 +7,7 @@ REM ============================================================
 cd /d "%~dp0"
 
 echo Building game.exe ...
-gcc -std=c11 -Wall -Wextra main.c util.c save.c player.c battle.c item.c -o game.exe
+gcc -std=c11 -Wall -Wextra -O2 -static main.c util.c save.c player.c battle.c item.c -o game.exe
 
 if %errorlevel%==0 (
     echo.
