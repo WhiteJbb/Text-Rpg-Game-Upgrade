@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
 #include <windows.h>
 
 /* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
@@ -68,6 +69,7 @@ typedef struct magicspell {
 }mgs;
 
 FILE* open_or_warn(const char* path, const char* mode);
+int read_int();
 void clear();
 void user_load();
 void mob_load();
@@ -132,6 +134,19 @@ void cleanup() {
 	mg_data = NULL;
 }
 
+/* 정수 입력을 안전하게 읽는다. 잘못된 입력이면 입력 버퍼를 비우고 INT_MIN을 반환.
+   호출부는 INT_MIN(또는 범위 밖)을 잘못된 입력으로 처리한다. */
+int read_int() {
+	int value;
+	int c;
+	if (scanf("%d", &value) != 1) {
+		while ((c = getchar()) != '\n' && c != EOF);
+		return INT_MIN;
+	}
+	while ((c = getchar()) != '\n' && c != EOF);
+	return value;
+}
+
 void cheat() {
 	stat_data.point += 100;
 	printf("스텟포인트 100 지급");
@@ -147,7 +162,7 @@ int main() {
 	printf(":: 유저 %s님 '행성 : 지구' 입장! ::\n\n", user_data.name);
 	while (1) {
 		int menu_choice = menu();
-        if (menu_choice == -1) {
+        if (menu_choice == INT_MIN) {
             printf(":: 잘못된 입력입니다. 다시 시도해주세요 ::\n");
             continue;
         }
@@ -213,13 +228,7 @@ int menu() {
 	printf("무엇을 하시겠습니까? : ");
 
 
-	if (scanf("%d", &sel) != 1) {
-        // 입력 오류 처리
-        while (getchar() != '\n'); // 버퍼 정리
-        return -1; // 오류 값 반환
-    }
-    while (getchar() != '\n'); // 버퍼 정리
-
+	sel = read_int();
 	return sel;
 
 
@@ -355,10 +364,16 @@ void stat_set() {
 		}
 		else if (stat_data.point > 0) {
 			printf("어떤 스텟을 올리시겠습니까? : ");
-			scanf("%d", &sel);
+			sel = read_int();
 			printf("%d번 스텟을 선택하셨습니다.\n", sel);
 			printf("얼마나 올리시겠습니까? : ");
-			scanf("%d", &much);
+			much = read_int();
+			if (much <= 0 || much > stat_data.point) {
+				printf(":: 1 이상, 남은 포인트(%d) 이하로 입력해주세요 ::\n", stat_data.point);
+				system("pause");
+				system("cls");
+				continue;
+			}
 			switch (sel) {
 			case 1:
 				printf("\n-------------------------------------\n\n");
@@ -563,7 +578,7 @@ void adventure_control() {
 	printf("5. 메뉴\n");
 	printf("\n-------------------------------------\n");
 	printf("어느지역으로 가시겠습니까? : ");
-	scanf("%d", &num);
+	num = read_int();
 	system("cls");
 	adventure(num);
 }
@@ -686,7 +701,7 @@ int monster(int num) {
 		printf("-------------------------------------\n");
 		printf(":: 무엇을 하시겠습니까? ::\n");
 		printf("\n1. 싸운다 , 2. 도망간다 , 3. 아이템사용 : ");
-		scanf("%d", &sel);
+		sel = read_int();
 		switch (sel) {
 		case 1:
 			return fight(num);
@@ -794,7 +809,7 @@ void potion_use() {
 		printf(":: HP포션(대) %d개 보유 ::\n", potionb_data.count);
 		printf("-------------------------------------\n\n");
 		printf("1. HP포션(소) , 2. HP포션(중), 3. HP포션(대) 4. 돌아가기 : ");
-		scanf("%d", &sel);
+		sel = read_int();
 		switch (sel) {
 		case 1:
 			if (potions_data.count != 0) {
@@ -934,7 +949,7 @@ void shop_choose() {
 		printf("3. 돌아가기\n");
 		printf("\n-------------------------------------\n\n");
 		printf("어느 곳으로 가시겠습니까? : ");
-		scanf("%d", &sel);
+		sel = read_int();
 
 		switch (sel) {
 		case 1:
@@ -966,7 +981,7 @@ void potion_shop() {
 		printf("4. 돌아가기\n");
 		printf("\n-------------------------------------\n\n");
 		printf("무엇을 구매하시겠습니까? : ");
-		scanf("%d", &sel);
+		sel = read_int();
 
 		switch (sel) {
 		case 1:
@@ -1054,7 +1069,7 @@ int fight(int num) {
 		printf(":: Lv.%d :: \n:: %s :: \n:: HP : %d / %d ::\n\n", user_data.level, user_data.name, user_data.hp, user_data.maxhp);
 		printf("------------------------------------------\n");
 		printf("1. 공격, 2. 마법, 3. 아이템사용 : ");
-		scanf("%d", &sel);
+		sel = read_int();
 		int result = COMBAT_ONGOING;
 		switch (sel) {
 		case 1:
@@ -1123,7 +1138,7 @@ void fight_pouse(int num) {
 		printf(":: HP포션(대) %d개 보유 ::\n", potionb_data.count);
 		printf("-------------------------------------\n\n");
 		printf("1. HP포션(소) , 2. HP포션(중), 3. HP포션(대) 4. 돌아가기 : ");
-		scanf("%d", &sel);
+		sel = read_int();
 		switch (sel) {
 		case 1:
 			if (potions_data.count != 0) {
@@ -1273,9 +1288,14 @@ void slot_machine() {
 	}
 	else if (user_data.gold > 0) {
 		printf("얼마를 넣으시겠습니까? - %d Gold 보유 : ", user_data.gold);
-		scanf("%d", &much);
-		if (much == 0) {
-			printf(":: 더 많은 금액을 입력해주십시오 ::\n");
+		much = read_int();
+		if (much <= 0) {
+			printf(":: 올바른 금액을 입력해주십시오 ::\n");
+			system("pause");
+		}
+		else if (much > user_data.gold) {
+			printf(":: 보유 골드보다 많이 걸 수 없습니다 ::\n");
+			system("pause");
 		}
 		else {
 			printf("\n\n:: - %d Gold ::\n\n", much);
