@@ -33,6 +33,7 @@ gcc -std=c11 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c uti
 - **한글 출력**: 소스·데이터 파일은 모두 UTF-8이며, 실행 시 `main()`에서 콘솔을 UTF-8로 설정(`SetConsoleOutputCP`)합니다. Windows 기본 콘솔 코드페이지가 949(CP949)여도 한글이 정상 출력됩니다.
 - **Visual Studio**: `game/`의 모든 `.c`를 한 프로젝트에 추가해 빌드하고, **작업 디렉터리를 `game/`로** 설정하세요. 한글이 깨지면 프로젝트 속성 → C/C++ → 명령줄에 **`/utf-8`** 옵션을 추가하세요(UTF-8 소스를 올바르게 해석).
 - 필요 데이터(이미 `game/test/`에 포함): `monsters.txt`, `magicspell.txt`(콘텐츠) / `data.txt`, `stat.txt`(저장, 없으면 자동 생성).
+- **Linux / macOS**: 동일하게 `gcc -std=c11 -Wall -Wextra *.c -o game` 으로 빌드됩니다. 화면 지우기·일시정지·딜레이는 `#ifdef _WIN32`로 플랫폼별 추상화되어 있어 수정 없이 동작합니다.
 
 ## 프로젝트 구조
 
@@ -105,7 +106,7 @@ gcc -std=c11 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c uti
 - [x] 마법 시스템 구현 (마법 5종: 파이어볼/아이스스피어/윈드커터/라이트닝볼트/메테오)
 - [x] 마법 상점(`magic_shop`) 구현 — 골드로 마법 습득, 보유 마법은 저장에 반영
 - [x] 추가 던전 3곳 + 몬스터 16종 (지역별 레벨 게이트, 보스 포함)
-- [ ] 크로스 플랫폼 지원(`windows.h`/`system` 추상화)
+- [x] 크로스 플랫폼 추상화 (`clear_screen`/`pause_screen`/`sleep_ms`/`init_console` 래퍼, `#ifdef _WIN32`)
 - [x] 데이터 파일 UTF-8 통일 + 콘솔 UTF-8 출력(`SetConsoleOutputCP`)
 
 ---

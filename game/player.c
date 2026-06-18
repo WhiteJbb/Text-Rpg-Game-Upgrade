@@ -2,7 +2,7 @@
 
 
 void stat_view() {
-	system("cls");
+	clear_screen();
 	printf("-------------------------------------\n\n");
 	printf("%s의 스텟\n\n", user_data.name);
 	printf("-------------------------------------\n");
@@ -14,7 +14,7 @@ void stat_view() {
 	printf(":: 운 : %d ::\n", stat_data.luck);
 	printf("==> 투자 가능한 스텟 포인트 : %d\n", stat_data.point);
 	printf("-------------------------------------\n");
-	system("pause");
+	pause_screen();
 }
 
 
@@ -22,7 +22,7 @@ void stat_set() {
 	int sel = 0;
 	int much = 0;
 	while (1) {
-		system("cls");
+		clear_screen();
 		printf("-------------------------------------\n\n");
 		printf(":: 스텟 설정 ::   - 남은 스텟 포인트 : %d\n", stat_data.point);
 		printf("\n-------------------------------------\n\n");
@@ -30,10 +30,10 @@ void stat_set() {
 		printf("4. 지력      5. 크리티컬    6.운\n");
 		printf("\n-------------------------------------\n");
 		if (stat_data.point == 0) {
-			Sleep(200);
+			sleep_ms(200);
 			printf(":: 투자할 스텟 포인트가 없습니다 ::\n");
-			system("pause");
-			system("cls");
+			pause_screen();
+			clear_screen();
 			return;
 		}
 		else if (stat_data.point > 0) {
@@ -44,8 +44,8 @@ void stat_set() {
 			much = read_int();
 			if (much <= 0 || much > stat_data.point) {
 				printf(":: 1 이상, 남은 포인트(%d) 이하로 입력해주세요 ::\n", stat_data.point);
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				continue;
 			}
 			switch (sel) {
@@ -53,89 +53,89 @@ void stat_set() {
 				printf("\n-------------------------------------\n\n");
 				printf(":: 열심히 운동하는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 힘 + %d ::\n", much);
 				printf("\n-------------------------------------\n");
 				stat_data.power += much;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			case 2:
 				printf("\n-------------------------------------\n\n");
 				printf(":: 더욱 빨라지는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 민첩 + %d ::\n", much);
 				printf("\n-------------------------------------\n");
 				stat_data.speed += much;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			case 3:
 				printf("\n-------------------------------------\n\n");
 				printf(":: 몸이 단단해지는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 방어 + %d ::\n", much);
 				printf("\n-------------------------------------\n");
 				stat_data.def += much;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			case 4:
 				printf("\n-------------------------------------\n\n");
 				printf(":: 마법에 대한 이해가 늘어나는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 지력 + %d ::\n", much);
 				printf("\n-------------------------------------\n");
 				stat_data.magic += much;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			case 5:
 				printf("\n-------------------------------------\n\n");
 				printf(":: 급소를 더 잘 찌르는법을 배우는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 크리티컬 + %.1f%% ::\n", much * 0.5);
 				printf("\n-------------------------------------\n");
 				stat_data.crit += much * 0.5;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			case 6:
 				printf("\n-------------------------------------\n\n");
 				printf(":: 네잎클로버를 찾는 중입니다..... ::\n");
 				printf("\n-------------------------------------\n\n");
-				Sleep(1000);
+				sleep_ms(1000);
 				printf(":: 운 + %d ::\n", much);
 				printf("\n-------------------------------------\n");
 				stat_data.luck += much;
 				stat_data.point -= much;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 				break;
 			default:
 				printf(":: 다시 선택해주세요 ::\n");
-				system("pause");
+				pause_screen();
 				break;
 			}
 
@@ -147,7 +147,7 @@ void stat_set() {
 
 
 void level() {
-	system("cls");
+	clear_screen();
 	printf("-------------------------------------\n");
 	printf(":: 닉네임 : %s ::\n", user_data.name);
 	printf(":: HP : %d / %d ::\n", user_data.hp, user_data.maxhp);
@@ -155,14 +155,14 @@ void level() {
 	printf(":: 골드 : %dGold ::\n", user_data.gold);
 	printf(":: 경험치 : %dexp ::\n", user_data.exp);
 	printf("::  레벨  : %d ::\n", user_data.level);
-	printf("==> %d레벨까지 %dexp\n", user_data.level + 1, user_data.level * user_data.level * 100 - user_data.exp);
+	printf("==> %d레벨까지 %dexp\n", user_data.level + 1, LEVELUP_EXP(user_data.level) - user_data.exp);
 	printf("-------------------------------------\n");
-	system("pause");
+	pause_screen();
 }
 
 
 void level_up() {
-	if (user_data.exp >= user_data.level * user_data.level * 100) {
+	if (user_data.exp >= LEVELUP_EXP(user_data.level)) {
 		user_data.level += 1;
 		printf("-------------------------------------\n");
 		printf("\n:: 레벨업! :: 현재 레벨 : %d\n", user_data.level);

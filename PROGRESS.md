@@ -4,8 +4,8 @@
 > 게임 설명은 [README.md](README.md), 작업 지침은 [CLAUDE.md](CLAUDE.md)를 참고하세요.
 
 - **마지막 업데이트**: 2026-06-18
-- **작업 브랜치**: `feature/dungeons` (기준: `main`) — 마법 상점은 PR #2로 `main`에 머지 완료
-- **현재 상태**: 리팩토링(0~7)·한글 UTF-8·마법 상점 완료(→ main 머지). 후속으로 **던전 3곳 + 몬스터 16종 + build.bat** 추가(이 브랜치, PR 예정). gcc 컴파일 검증 완료.
+- **작업 브랜치**: `feature/balance-crossplatform` (기준: `main`) — 던전 확장은 PR #3으로 `main`에 머지 완료
+- **현재 상태**: 던전/몬스터까지 머지 완료. 후속으로 **경험치 밸런스 완화 + 크로스플랫폼 추상화** 추가(이 브랜치, PR 예정). gcc 컴파일 검증 완료.
 - **빌드 검증**: 사용자 환경에서 빌드·실행·한글 출력 확인 완료.
 
 ---
@@ -28,7 +28,7 @@ make
 - 고등학교 때 C로 만든 콘솔 Text RPG를 점진적으로 리팩토링.
 - 소스: [game/](game/) — `game.h` + `main/util/save/player/battle/item.c` + `Makefile`
 - 데이터/저장: [game/test/](game/test/)
-- Windows 전용(`windows.h`, `system`, `Sleep`).
+- 콘솔/딜레이를 플랫폼별로 추상화(`#ifdef _WIN32`) — Windows + Linux/macOS 빌드 가능.
 
 ### 파일 구조
 | 파일 | 역할 |
@@ -74,7 +74,7 @@ make
 1. **빌드 검증** (필수, 위 참고) → 통과하면 `refactor` 브랜치를 `main`으로 PR/머지 고려.
 2. ✅ 마법 상점(`magic_shop`) 구현 완료 — 마법 5종, 골드로 습득, 보유 상태는 `user.spells` 비트마스크로 저장.
 3. ✅ 추가 던전 3곳(늑대의 굴/엘프의 숲/뱀파이어의 성) + 몬스터 16종 + 지역별 레벨 게이트 완료.
-4. 크로스 플랫폼(`windows.h`/`system` 추상화).
+4. ✅ 크로스 플랫폼 추상화 완료 (`clear_screen`/`pause_screen`/`sleep_ms`/`init_console` 래퍼) + 경험치 곡선 완화(`LEVELUP_EXP` ×50).
 5. ✅ **데이터 인코딩 통일 완료** — `monsters.txt`를 CP949→UTF-8로 변환, `main()`에서 콘솔을 UTF-8로 설정(`SetConsoleOutputCP`)하여 한글 깨짐 수정. (MSVC 빌드 시 `/utf-8` 필요)
 
 ---

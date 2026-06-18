@@ -141,7 +141,7 @@ void new_user() {
 	stat_data.luck = 1;
 	stat_data.point = 0;
 	save();
-	system("cls");
+	clear_screen();
 }
 
 
@@ -168,7 +168,7 @@ void save() {
 	printf(":: 저장중,,,, ::\n");
 	printf(":: 저장이 완료되었습니다 ::\n");
 	printf("\n-------------------------------------\n");
-	system("pause");
+	pause_screen();
 }
 
 

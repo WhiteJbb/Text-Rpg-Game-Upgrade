@@ -7,7 +7,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <limits.h>
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <unistd.h>   /* usleep (POSIX) */
+#endif
 
 /* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
    - 기존에는 "C:\\test\\..." 절대 경로로 고정되어 다른 PC에서 실행이 불가능했음
@@ -29,6 +33,9 @@
 #define POTION_S_PRICE 100
 #define POTION_M_PRICE 500
 #define POTION_L_PRICE 1000
+
+/* 레벨업에 필요한 경험치 (level -> level+1). 밸런스: 기존 *100 에서 *50 으로 완화 */
+#define LEVELUP_EXP(lv) ((lv) * (lv) * 50)
 
 typedef struct user {
 	int first;
@@ -83,6 +90,10 @@ typedef struct magicspell {
 
 FILE* open_or_warn(const char* path, const char* mode);
 int read_int();
+void clear_screen();   /* 화면 지우기 (플랫폼별) */
+void pause_screen();   /* 키 입력 대기 (플랫폼별) */
+void sleep_ms(int ms); /* ms 대기 (플랫폼별) */
+void init_console();   /* 콘솔 UTF-8 설정 (Windows 전용, POSIX는 no-op) */
 void clear();
 void user_load();
 void mob_load();
