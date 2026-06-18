@@ -79,6 +79,8 @@ void potion_earn(int x, int y, int z);
 void potion_use();
 void item_show();
 void save();
+void write_save_files();
+void cleanup();
 void inside_save();
 void level();
 void level_up();
@@ -120,6 +122,14 @@ FILE* open_or_warn(const char* path, const char* mode) {
 		printf(":: [오류] 파일을 열 수 없습니다: %s ::\n", path);
 	}
 	return fp;
+}
+
+/* 동적 할당한 몬스터/마법 데이터 해제 (프로그램 종료 시 호출) */
+void cleanup() {
+	free(mob_data);
+	free(mg_data);
+	mob_data = NULL;
+	mg_data = NULL;
 }
 
 void cheat() {
@@ -166,9 +176,11 @@ int main() {
 			break;
 		case 8:
 			end();
+			cleanup();
 			return 0;
 		case 9:
 			clear();
+			cleanup();
 			return 0;
 		default:
 			printf(":: 다시 선택해주세요 ::");
@@ -266,10 +278,16 @@ void mob_load() {
 		exit(1);
 	}
 
-	while (!feof(fp)) {
-		mob_data = realloc(mob_data, sizeof(mob) * (i + 1));
-		fscanf(fp, "%s %d %d %d %d %d ", mob_data[i].name, &mob_data[i].level, &mob_data[i].emin, &mob_data[i].emax, &mob_data[i].gmin, &mob_data[i].gmax);
-		fscanf(fp, "%d %d %d %d %d %d\n", &mob_data[i].hp, &mob_data[i].maxhp, &mob_data[i].dam, &mob_data[i].pos, &mob_data[i].pom, &mob_data[i].pob);
+	/* EOF 뒤 쓰레기 1개를 더 읽던 while(!feof) 버그 수정: 읽기 성공 필드 수로 판단 */
+	while (1) {
+		mob* tmp = realloc(mob_data, sizeof(mob) * (i + 1));
+		if (tmp == NULL) break;
+		mob_data = tmp;
+		if (fscanf(fp, "%s %d %d %d %d %d %d %d %d %d %d %d",
+			mob_data[i].name, &mob_data[i].level, &mob_data[i].emin, &mob_data[i].emax,
+			&mob_data[i].gmin, &mob_data[i].gmax, &mob_data[i].hp, &mob_data[i].maxhp,
+			&mob_data[i].dam, &mob_data[i].pos, &mob_data[i].pom, &mob_data[i].pob) != 12)
+			break;
 		i++;
 	}
 
@@ -289,9 +307,12 @@ void magic_load() {
 		exit(1);
 	}
 
-	while (!feof(fp)) {
-		mg_data = realloc(mg_data, sizeof(mgs) * (i + 1));
-		fscanf(fp, "%s %d %d\n", mg_data[i].name, &mg_data[i].mp, &mg_data[i].dam);
+	while (1) {
+		mgs* tmp = realloc(mg_data, sizeof(mgs) * (i + 1));
+		if (tmp == NULL) break;
+		mg_data = tmp;
+		if (fscanf(fp, "%s %d %d", mg_data[i].name, &mg_data[i].mp, &mg_data[i].dam) != 3)
+			break;
 		i++;
 	}
 
@@ -469,25 +490,23 @@ void new_user() {
 	system("cls");
 }
 
-void save() {
-	FILE* fp;
-
-	fp = open_or_warn(DATA_PATH, "w");
+/* 저장 파일(data.txt, stat.txt)에 현재 상태를 기록한다.
+   기존에 save/inside_save/auto_save/clear에 중복되어 있던 파일쓰기를 일원화. */
+void write_save_files() {
+	FILE* fp = open_or_warn(DATA_PATH, "w");
 	if (fp == NULL) return;
-
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
-
 	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
-
 	fclose(fp);
 
 	fp = open_or_warn(STAT_PATH, "w");
 	if (fp == NULL) return;
-
 	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
-
 	fclose(fp);
+}
 
+void save() {
+	write_save_files();
 	printf("-------------------------------------\n\n");
 	printf(":: 저장중,,,, ::\n");
 	printf(":: 저장이 완료되었습니다 ::\n");
@@ -496,23 +515,7 @@ void save() {
 }
 
 void inside_save() {
-	FILE* fp;
-
-	fp = open_or_warn(DATA_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
-
-	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
-
-	fclose(fp);
-
-	fp = open_or_warn(STAT_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
-
-	fclose(fp);
+	write_save_files();
 }
 
 void end() {
@@ -524,40 +527,29 @@ void end() {
 }
 
 void clear() {
-	user user_data = { 0, "", 0, 0, 0, 0, 0, 0, 0 };
+	/* 초기화: 전역 상태를 기본값으로 되돌리고 저장한다 (이후 main에서 프로그램 종료).
+	   기존에는 같은 이름의 지역 변수로 전역을 가려(shadow) 실제 전역은 그대로 두던
+	   잠재 버그가 있었음. first=0 이므로 다음 실행 시 new_user()가 새 캐릭터를 만든다. */
+	user_data.first = 0;
+	user_data.name[0] = '\0';
+	user_data.level = 0;
+	user_data.exp = 0;
+	user_data.hp = 0;
+	user_data.maxhp = 0;
+	user_data.mp = 0;
+	user_data.maxmp = 0;
+	user_data.gold = 0;
+	potions_data.count = 0; potions_data.healing = 20;
+	potionm_data.count = 0; potionm_data.healing = 100;
+	potionb_data.count = 0; potionb_data.healing = 500;
+	stat_data.power = 5; stat_data.speed = 5; stat_data.def = 5;
+	stat_data.crit = 0.1; stat_data.magic = 5; stat_data.luck = 1; stat_data.point = 0;
 
-	hpo potions_data = { 0, 20 };
-
-	hpo potionm_data = { 0, 100 };
-
-	hpo potionb_data = { 0, 500 };
-
-	stat stat_data = { 5, 5, 5, 0.1, 5, 1 , 0 };
-
-	FILE* fp;
-
-	fp = open_or_warn(DATA_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
-
-	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
-
-	fclose(fp);
-
-	fp = open_or_warn(STAT_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
-
-	fclose(fp);
+	write_save_files();
 
 	printf("-------------------------------------\n\n");
 	printf(":: 초기화 완료 ::\n\n");
 	printf("-------------------------------------\n");
-
-	return;
-
 }
 
 void adventure_control() {
@@ -682,24 +674,7 @@ void auto_save(int x, int y, int a, int b) {
 	printf(":: 현재 골드 : %d Gold ::\n\n", user_data.gold);
 	printf("+++++++++++++++++++++++++++++++++++++\n");
 
-	FILE* fp;
-
-	fp = open_or_warn(DATA_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %s %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp);
-
-	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
-
-	fclose(fp);
-
-	fp = open_or_warn(STAT_PATH, "w");
-	if (fp == NULL) return;
-
-	fprintf(fp, "%d %d %d %f %d %d %d\n", stat_data.power, stat_data.speed, stat_data.def, stat_data.crit, stat_data.magic, stat_data.luck, stat_data.point);
-
-	fclose(fp);
-
+	write_save_files();   /* 버그 수정: 이전엔 mp/maxmp 누락(7필드)으로 직접 기록했음 */
 }
 
 int monster(int num) {
