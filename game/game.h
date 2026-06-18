@@ -81,7 +81,7 @@ typedef struct healthpotion {
 	int healing;
 }hpo;
 
-typedef struct stat {
+typedef struct gamestat {
 	int power;
 	int speed;
 	int def;
@@ -89,7 +89,7 @@ typedef struct stat {
 	float crit;
 	int luck;
 	int point;
-}stat;
+}gamestat;
 
 typedef struct magicspell {
 	char name[32];
@@ -161,7 +161,7 @@ void help();
 
 /* 전역 변수 (정의는 main.c) */
 extern user user_data;
-extern stat stat_data;
+extern gamestat stat_data;
 extern mob* mob_data;
 extern mgs* mg_data;
 extern hpo potions_data;
