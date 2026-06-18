@@ -36,6 +36,13 @@ gcc -std=c11 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=UTF-8 main.c uti
 - 필요 데이터(이미 `game/test/`에 포함): `monsters.txt`, `magicspell.txt`(콘텐츠) / `data.txt`, `stat.txt`(저장, 없으면 자동 생성).
 - **Linux / macOS**: 동일하게 `gcc -std=c11 -Wall -Wextra *.c -o game` 으로 빌드됩니다. 화면 지우기·일시정지·딜레이는 `#ifdef _WIN32`로 플랫폼별 추상화되어 있어 수정 없이 동작합니다.
 
+### 단일 실행 파일 배포 (Windows)
+`build.bat`(또는 `gcc -std=c11 -O2 -static *.c -o game.exe`)로 만든 **`game.exe` 하나만** 전달하면 됩니다.
+- 의존 DLL은 윈도우 기본 내장(UCRT)뿐 — 별도 설치/런타임이 필요 없습니다.
+- 첫 실행 시 `test/` 폴더와 데이터 파일(몬스터/마법/장비)이 **자동 생성**되고 세이브도 그 안에 만들어집니다. (데이터는 코드에 내장)
+- 즉, **빈 폴더에 `game.exe`만 두고 더블클릭**하면 Windows 10/11 어디서나 실행됩니다.
+- `test/*.txt`를 직접 두면 그 파일을 우선 사용하므로, 수치를 고쳐 데이터를 바꿀 수 있습니다.
+
 ## 프로젝트 구조
 
 리팩토링 전에는 단일 `code.c`(약 1,300줄)였으나, 역할별 모듈로 분리했습니다.

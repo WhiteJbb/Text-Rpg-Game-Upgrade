@@ -11,6 +11,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>   /* usleep (POSIX) */
+#include <sys/stat.h> /* mkdir (POSIX) */
 #endif
 
 /* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
@@ -40,7 +41,7 @@
 
 typedef struct user {
 	int first;
-	char name[20];
+	char name[32];
 	int level;
 	int exp;
 	int hp;
@@ -55,7 +56,7 @@ typedef struct user {
 }user;
 
 typedef struct mob {
-	char name[20];
+	char name[32];
 	int level;
 	int emin;
 	int emax;
@@ -85,7 +86,7 @@ typedef struct stat {
 }stat;
 
 typedef struct magicspell {
-	char name[20];
+	char name[32];
 	int mp;
 	int dam;
 	int price;     /* 마법상점 가격 (파이어볼=0, 기본 보유) */
@@ -93,7 +94,7 @@ typedef struct magicspell {
 }mgs;
 
 typedef struct equipment {
-	char name[20];
+	char name[32];
 	int slot;      /* 0 = 무기, 1 = 방어구 */
 	int power;     /* 힘 보너스 */
 	int def;       /* 방어 보너스 */
@@ -108,6 +109,8 @@ void clear_screen();   /* 화면 지우기 (플랫폼별) */
 void pause_screen();   /* 키 입력 대기 (플랫폼별) */
 void sleep_ms(int ms); /* ms 대기 (플랫폼별) */
 void init_console();   /* 콘솔 UTF-8 설정 (Windows 전용, POSIX는 no-op) */
+void ensure_dir(const char* path);  /* 폴더 생성 (이미 있으면 무시) */
+void ensure_data_files();           /* 데이터 파일이 없으면 내장 기본값으로 생성 */
 void clear();
 void user_load();
 void mob_load();

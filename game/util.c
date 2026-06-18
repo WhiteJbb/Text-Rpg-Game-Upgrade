@@ -76,3 +76,12 @@ void sleep_ms(int ms) {
 #endif
 }
 
+/* 폴더 생성 (이미 있으면 무시). 단일 exe 실행 시 데이터/세이브 폴더 자동 생성용. */
+void ensure_dir(const char* path) {
+#ifdef _WIN32
+	CreateDirectoryA(path, NULL);
+#else
+	mkdir(path, 0755);
+#endif
+}
+
