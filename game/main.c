@@ -8,6 +8,7 @@ hpo potions_data;
 hpo potionm_data;
 hpo potionb_data;
 int spell_count;
+int mob_count;
 
 
 int main() {

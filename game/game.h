@@ -129,5 +129,6 @@ extern hpo potions_data;
 extern hpo potionm_data;
 extern hpo potionb_data;
 extern int spell_count;   /* magic_load가 설정하는 마법 개수 */
+extern int mob_count;     /* mob_load가 설정하는 몬스터 개수 */
 
 #endif /* GAME_H */

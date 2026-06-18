@@ -69,6 +69,7 @@ void mob_load() {
 	}
 
 	fclose(fp);
+	mob_count = i;
 }
 
 

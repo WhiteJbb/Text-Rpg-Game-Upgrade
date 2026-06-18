@@ -6,9 +6,9 @@ void adventure_control() {
 	int num;
 	printf("-------------------------------------\n\n");
 	printf("1. 몬스터의 초원 (Lv.1 ~)\n");
-	printf("2. 늑대의 굴 \n");
-	printf("3. 엘프의 숲\n");
-	printf("4. 뱀파이어의 성\n");
+	printf("2. 늑대의 굴     (Lv.5 ~)\n");
+	printf("3. 엘프의 숲     (Lv.15 ~)\n");
+	printf("4. 뱀파이어의 성 (Lv.30 ~)\n");
 	printf("5. 메뉴\n");
 	printf("\n-------------------------------------\n");
 	printf("어느지역으로 가시겠습니까? : ");
@@ -19,41 +19,52 @@ void adventure_control() {
 
 
 void adventure(int region) {
-	int num;
-	while (1) {
-		num = rand() % 10000 + 1;
-		switch (region) {
-		case 1:
-			printf("-------------------------------------\n");
-			printf(":: %s님의 HP : %d / %d ::\n", user_data.name, user_data.hp, user_data.maxhp);
-			printf("-------------------------------------\n");
-			printf(":: 몬스터의 초원 ::\n");
-			printf(":: 곳곳에서 섬뜩한 눈빛이 느껴집니다... ::\n");
-			if (num <= 5000) {
-				if (monster(0) == COMBAT_TO_MENU) return;
-				break;
-			}
-			if (num > 5000 && num <= 8000) {
-				if (monster(1) == COMBAT_TO_MENU) return;
-				break;
-			}
-			if (num > 8000 && num <= 9900) {
-				if (monster(2) == COMBAT_TO_MENU) return;
-				break;
-			}
-			if (num > 9900) {
-				if (monster(3) == COMBAT_TO_MENU) return;
-				break;
-			}
-			break;
-		case 5:
-			return;
-		default:
-			printf(":: 아직 갈 수 없는 지역입니다 ::\n");
-			system("pause");
-			return;
-		}
+	/* 지역(1~4)별 정보. 지역당 몬스터 4종(일반3 + 보스1)을 mob_data에서 연속 배치. */
+	static const char* names[] = { "", "몬스터의 초원", "늑대의 굴", "엘프의 숲", "뱀파이어의 성" };
+	static const char* flavor[] = { "",
+		"곳곳에서 섬뜩한 눈빛이 느껴집니다...",
+		"축축한 굴 속에서 으르렁거리는 소리가 들립니다...",
+		"고요한 숲에 정령들의 기척이 감돕니다...",
+		"차가운 성 안에서 피냄새가 진동합니다..." };
+	static const int min_level[] = { 0, 1, 5, 15, 30 };
 
+	if (region == 5)
+		return;                       /* 메뉴로 복귀 */
+	if (region < 1 || region > 4) {
+		printf(":: 잘못된 지역입니다 ::\n");
+		system("pause");
+		return;
+	}
+
+	int base = (region - 1) * 4;      /* 이 지역의 첫 몬스터 인덱스 */
+	if (base + 3 >= mob_count) {
+		printf(":: 아직 준비되지 않은 지역입니다 ::\n");
+		system("pause");
+		return;
+	}
+	if (user_data.level < min_level[region]) {
+		printf(":: '%s'은(는) 권장 레벨 %d 이상부터 입장할 수 있습니다. (현재 Lv.%d) ::\n",
+			names[region], min_level[region], user_data.level);
+		system("pause");
+		return;
+	}
+
+	while (1) {
+		int num = rand() % 10000 + 1;
+		int idx;
+		if (num <= 5000)       idx = base + 0;
+		else if (num <= 8000)  idx = base + 1;
+		else if (num <= 9900)  idx = base + 2;
+		else                   idx = base + 3;   /* 1% 확률 보스 */
+
+		printf("-------------------------------------\n");
+		printf(":: %s님의 HP : %d / %d ::\n", user_data.name, user_data.hp, user_data.maxhp);
+		printf("-------------------------------------\n");
+		printf(":: %s ::\n", names[region]);
+		printf(":: %s ::\n", flavor[region]);
+
+		if (monster(idx) == COMBAT_TO_MENU)
+			return;
 	}
 }
 
