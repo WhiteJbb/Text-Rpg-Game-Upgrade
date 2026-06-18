@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>행성 : 지구 — Text RPG</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css" />
@@ -15,9 +15,8 @@
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;background:var(--void);overflow:hidden;}
   body{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;
     font-family:var(--pix);color:var(--p);
-    /* 우주 배경: 깊은 그라데이션 + 옅은 별 */
     background:
       radial-gradient(1px 1px at 18% 22%, rgba(255,255,255,.7), transparent),
       radial-gradient(1px 1px at 72% 16%, rgba(255,255,255,.5), transparent),
@@ -27,16 +26,17 @@
       radial-gradient(2px 2px at 60% 84%, rgba(150,255,190,.35), transparent),
       radial-gradient(circle at 50% -10%, #0a1622 0%, #05080d 45%, #020308 100%);
   }
-  /* 타이틀 */
+  /* 화면 크기에 맞춰 JS가 zoom으로 통째로 축소하는 단위 */
+  .stage{display:flex;flex-direction:column;align-items:center;gap:16px;}
+
   .title{
     margin:0;font-size:30px;letter-spacing:.18em;color:var(--p-bright);
-    text-shadow:0 0 6px var(--p),0 0 18px rgba(92,240,140,.6);
+    text-shadow:0 0 6px var(--p),0 0 18px rgba(92,240,140,.6);white-space:nowrap;
   }
   .title .cur{display:inline-block;width:.62em;height:1em;margin-left:.12em;
     background:var(--p);vertical-align:-2px;animation:blink 1.05s step-end infinite;}
   @keyframes blink{0%,55%{opacity:1}56%,100%{opacity:0}}
 
-  /* 모니터 베젤(실제 하드웨어 느낌) */
   .monitor{
     position:relative;padding:26px 26px 34px;border-radius:22px;
     background:linear-gradient(180deg,var(--bezel-hi) -40%,var(--bezel) 18%,var(--bezel-lo) 130%);
@@ -54,7 +54,6 @@
     background:var(--p);box-shadow:0 0 8px var(--p);vertical-align:1px;animation:pulse 2.6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 
-  /* 스크린 유리: 곡면 비네팅 + 인광 + 스캔라인 */
   .screen{
     position:relative;padding:14px 16px;border-radius:14px/18px;background:var(--screen);
     box-shadow:0 0 0 1px #000, inset 0 0 60px rgba(0,0,0,.85), inset 0 0 18px rgba(92,240,140,.12);
@@ -66,54 +65,65 @@
     70%{transform:scaleY(1);filter:brightness(2)}
     100%{transform:scaleY(1);filter:brightness(1)}
   }
-  /* 스캔라인 + 화면 글로우(텍스트 위 오버레이) */
   .screen::after{
     content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
     background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px);
     box-shadow:inset 0 0 100px rgba(0,0,0,.55);mix-blend-mode:multiply;
   }
-  /* 유리 반사 하이라이트 */
   .screen::before{
     content:"";position:absolute;left:-30%;top:-60%;width:80%;height:120%;pointer-events:none;
     background:radial-gradient(ellipse at center, rgba(180,255,210,.07), transparent 60%);transform:rotate(8deg);
   }
   #terminal{position:relative;z-index:1;}
   .xterm{padding:0;}
-  /* 인광 블룸: 터미널 글자에 은은한 글로우 */
   #terminal .xterm-rows{text-shadow:0 0 4px rgba(92,240,140,.45);}
 
-  /* 상태바(인게임 OS 느낌) */
   .statusbar{
     display:flex;gap:18px;align-items:center;font-size:12px;letter-spacing:.08em;color:var(--p-dim);
     border:1px solid #11321f;border-radius:7px;padding:7px 14px;background:rgba(6,18,11,.6);
+    white-space:nowrap;
   }
   .statusbar b{color:var(--p);font-weight:normal;}
+  /* 아주 좁은 화면에선 상태바를 세로로 */
+  @media (max-width:430px){ .statusbar{flex-direction:column;gap:4px;} }
 
-  @media (max-width:820px){ .monitor{transform:scale(.78);} .title{font-size:24px;} }
-  @media (max-width:560px){ .monitor{transform:scale(.5);} body{gap:6px;} }
   @media (prefers-reduced-motion:reduce){
     .screen{animation:none} .title .cur{animation:none} .led{animation:none}
   }
 </style>
 </head>
 <body>
-  <h1 class="title">행성 : 지구<span class="cur"></span></h1>
-
-  <div class="monitor">
-    <div class="screen"><div id="terminal"></div></div>
-    <div class="brand">EARTH TERMINAL · 지구 OS v1.0<span class="led"></span></div>
-  </div>
-
-  <div class="statusbar">
-    <span><b>●</b> ONLINE</span>
-    <span>메뉴 번호 + <b>Enter</b></span>
-    <span>새로고침 = 처음부터</span>
+  <div class="stage" id="stage">
+    <h1 class="title">행성 : 지구<span class="cur"></span></h1>
+    <div class="monitor">
+      <div class="screen"><div id="terminal"></div></div>
+      <div class="brand">EARTH TERMINAL · 지구 OS v1.0<span class="led"></span></div>
+    </div>
+    <div class="statusbar">
+      <span><b>●</b> ONLINE</span>
+      <span>메뉴 번호 + <b>Enter</b> · 화면 탭하면 입력</span>
+      <span>새로고침 = 처음부터</span>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
   <script>
+    // 화면 크기에 맞춰 전체(.stage)를 비율 축소 — 어떤 기기에서도 글자 깨짐 없이 들어맞게
+    function fitStage(){
+      const stage = document.getElementById("stage");
+      if (!stage) return;
+      stage.style.zoom = "1";
+      const w = stage.offsetWidth, h = stage.offsetHeight;
+      if (!w || !h) return;
+      const pad = 14;
+      const s = Math.min(1, (window.innerWidth - pad) / w, (window.innerHeight - pad) / h);
+      stage.style.zoom = String(s);
+    }
+    let _ft;
+    window.addEventListener("resize", () => { clearTimeout(_ft); _ft = setTimeout(fitStage, 120); });
+    window.addEventListener("orientationchange", () => setTimeout(fitStage, 200));
+
     (async () => {
-      // 비트맵 폰트가 로드된 뒤에 터미널을 열어야 글자 정렬이 맞는다
       try { await document.fonts.load('16px "Galmuri11"'); await document.fonts.ready; } catch (e) {}
 
       const term = new Terminal({
@@ -127,9 +137,11 @@
       });
       term.open(document.getElementById("terminal"));
       term.focus();
-      document.addEventListener("click", () => term.focus());
+      // 모바일: 화면을 탭하면 소프트 키보드가 뜨도록 포커스
+      const refocus = () => term.focus();
+      document.addEventListener("click", refocus);
+      document.addEventListener("touchstart", refocus, { passive: true });
 
-      // Emscripten 모듈: 출력은 터미널, 입력은 UTF-8 바이트 큐
       window.Module = {
         inq: [],
         termWrite: (s) => term.write(s),
@@ -139,7 +151,9 @@
       const enc = new TextEncoder();
       term.onData((d) => { for (const b of enc.encode(d)) Module.inq.push(b); });
 
-      // 폰트/터미널 준비 후 게임 로드
+      fitStage();
+      setTimeout(fitStage, 200);   // 폰트/렌더 안정화 후 한 번 더
+
       const s = document.createElement("script");
       s.src = "game.js";
       document.body.appendChild(s);
