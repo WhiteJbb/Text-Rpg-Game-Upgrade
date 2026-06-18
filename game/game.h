@@ -20,6 +20,7 @@
 #define STAT_PATH      "test/stat.txt"
 #define MONSTERS_PATH  "test/monsters.txt"
 #define MAGIC_PATH     "test/magicspell.txt"
+#define EQUIP_PATH     "test/equipment.txt"
 
 /* 전투/조우 결과 신호 (제어 흐름 정상화: 재귀 호출 대신 값을 반환) */
 #define COMBAT_CONTINUE 0   /* 탐험 계속 (다음 몬스터 조우) */
@@ -48,6 +49,9 @@ typedef struct user {
 	int maxmp;
 	int gold;
 	int spells;    /* 보유 마법 비트마스크 (bit i = mg_data[i] 보유) */
+	int equips;    /* 보유 장비 비트마스크 (bit i = eq_data[i] 보유) */
+	int weapon;    /* 착용 무기 인덱스 (-1 = 없음) */
+	int armor;     /* 착용 방어구 인덱스 (-1 = 없음) */
 }user;
 
 typedef struct mob {
@@ -88,6 +92,16 @@ typedef struct magicspell {
 	int learned;   /* 보유 여부 0/1 (저장은 user.spells 비트마스크로) */
 }mgs;
 
+typedef struct equipment {
+	char name[20];
+	int slot;      /* 0 = 무기, 1 = 방어구 */
+	int power;     /* 힘 보너스 */
+	int def;       /* 방어 보너스 */
+	int magic;     /* 지력 보너스 */
+	int price;
+	int owned;     /* 보유 여부 0/1 (저장은 user.equips 비트마스크로) */
+}equip;
+
 FILE* open_or_warn(const char* path, const char* mode);
 int read_int();
 void clear_screen();   /* 화면 지우기 (플랫폼별) */
@@ -99,6 +113,7 @@ void user_load();
 void mob_load();
 void stat_load();
 void magic_load();
+void equip_load();
 void adventure(int region);
 void adventure_control();
 void potion_earn(int x, int y, int z);
@@ -121,6 +136,10 @@ int damage(int dam, int num);
 void shop_choose();
 void potion_shop();
 void magic_shop();
+void equip_shop();
+int total_power();
+int total_def();
+int total_magic();
 int fight(int num);
 int attack(int num);
 int magic(int num);
@@ -141,5 +160,7 @@ extern hpo potionm_data;
 extern hpo potionb_data;
 extern int spell_count;   /* magic_load가 설정하는 마법 개수 */
 extern int mob_count;     /* mob_load가 설정하는 몬스터 개수 */
+extern equip* eq_data;
+extern int equip_count;   /* equip_load가 설정하는 장비 개수 */
 
 #endif /* GAME_H */

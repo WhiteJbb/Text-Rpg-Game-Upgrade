@@ -16,8 +16,10 @@ FILE* open_or_warn(const char* path, const char* mode) {
 void cleanup() {
 	free(mob_data);
 	free(mg_data);
+	free(eq_data);
 	mob_data = NULL;
 	mg_data = NULL;
+	eq_data = NULL;
 }
 
 

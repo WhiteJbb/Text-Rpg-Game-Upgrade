@@ -111,6 +111,22 @@ void item_show() {
 	printf("-------------------------------------\n");
 	pause_screen();
 	clear_screen();
+
+	printf("-------------------------------------\n\n");
+	printf(":: %s님의 장비 보유목록 ::\n\n", user_data.name);
+	printf("-------------------------------------\n");
+	printf(":: 착용 무기 : %s / 방어구 : %s ::\n",
+		user_data.weapon >= 0 ? eq_data[user_data.weapon].name : "없음",
+		user_data.armor >= 0 ? eq_data[user_data.armor].name : "없음");
+	for (int i = 0; i < equip_count; i++) {
+		if (eq_data[i].owned)
+			printf(":: %s [%s] (힘+%d 방어+%d 지력+%d) ::\n",
+				eq_data[i].name, eq_data[i].slot == 0 ? "무기" : "방어구",
+				eq_data[i].power, eq_data[i].def, eq_data[i].magic);
+	}
+	printf("-------------------------------------\n");
+	pause_screen();
+	clear_screen();
 }
 
 
@@ -162,6 +178,68 @@ void magic_shop() {
 }
 
 
+/* 장비상점: 미보유 장비는 골드로 구매(자동 착용), 보유 장비는 선택 시 착용. */
+void equip_shop() {
+	int sel, i;
+	while (1) {
+		clear_screen();
+		printf("-------------------------------------\n\n");
+		printf(":: 장비상점 ::       골드 보유량 : %d Gold\n", user_data.gold);
+		printf(":: 착용중 - 무기: %s / 방어구: %s\n",
+			user_data.weapon >= 0 ? eq_data[user_data.weapon].name : "없음",
+			user_data.armor >= 0 ? eq_data[user_data.armor].name : "없음");
+		printf("\n-------------------------------------\n");
+		for (i = 0; i < equip_count; i++) {
+			const char* slot = eq_data[i].slot == 0 ? "무기" : "방어구";
+			int equipped = (eq_data[i].slot == 0 && user_data.weapon == i) ||
+			               (eq_data[i].slot == 1 && user_data.armor == i);
+			if (equipped)
+				printf("%2d. [%s] %s - 착용중 (힘+%d 방어+%d 지력+%d)\n", i + 1, slot, eq_data[i].name, eq_data[i].power, eq_data[i].def, eq_data[i].magic);
+			else if (eq_data[i].owned)
+				printf("%2d. [%s] %s - 보유 (힘+%d 방어+%d 지력+%d)\n", i + 1, slot, eq_data[i].name, eq_data[i].power, eq_data[i].def, eq_data[i].magic);
+			else
+				printf("%2d. [%s] %s - %d Gold (힘+%d 방어+%d 지력+%d)\n", i + 1, slot, eq_data[i].name, eq_data[i].price, eq_data[i].power, eq_data[i].def, eq_data[i].magic);
+		}
+		printf(" 0. 돌아가기\n");
+		printf("\n-------------------------------------\n\n");
+		printf("구매/착용할 장비 (미보유=구매, 보유=착용) : ");
+		sel = read_int();
+		if (sel == 0) {
+			save();
+			clear_screen();
+			return;
+		}
+		if (sel < 1 || sel > equip_count) {
+			printf(":: 다시 입력해주세요 ::\n");
+			pause_screen();
+			continue;
+		}
+		equip* e = &eq_data[sel - 1];
+		printf("-------------------------------------\n\n");
+		if (!e->owned) {
+			if (user_data.gold >= e->price) {
+				user_data.gold -= e->price;
+				e->owned = 1;
+				user_data.equips |= (1 << (sel - 1));
+				if (e->slot == 0) user_data.weapon = sel - 1;   /* 구매 시 자동 착용 */
+				else user_data.armor = sel - 1;
+				printf(":: %s 구매 + 착용 완료! ::\n", e->name);
+			}
+			else {
+				printf(":: 골드가 부족합니다 ::\n");
+			}
+		}
+		else {
+			if (e->slot == 0) user_data.weapon = sel - 1;
+			else user_data.armor = sel - 1;
+			printf(":: %s 착용 완료! ::\n", e->name);
+		}
+		printf("\n-------------------------------------\n\n");
+		pause_screen();
+	}
+}
+
+
 void shop_choose() {
 	int sel;
 	while (1) {
@@ -169,7 +247,8 @@ void shop_choose() {
 		printf("-------------------------------------\n\n");
 		printf("1. 물약상점\n");
 		printf("2. 마법상점\n");
-		printf("3. 돌아가기\n");
+		printf("3. 장비상점\n");
+		printf("4. 돌아가기\n");
 		printf("\n-------------------------------------\n\n");
 		printf("어느 곳으로 가시겠습니까? : ");
 		sel = read_int();
@@ -182,6 +261,9 @@ void shop_choose() {
 			magic_shop();
 			break;
 		case 3:
+			equip_shop();
+			break;
+		case 4:
 			clear_screen();
 			return;
 		default:

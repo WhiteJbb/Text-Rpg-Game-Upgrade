@@ -187,7 +187,7 @@ int attack(int num) {
 	sleep_ms(500);
 
 	/* 치명타: stat_data.crit 는 퍼센트(예: 0.5%). rand()%10000 으로 소수 1자리까지 판정 */
-	int pdam = stat_data.power;
+	int pdam = total_power();
 	if ((rand() % 10000) < (int)(stat_data.crit * 100)) {
 		pdam *= 2;
 		printf(":: 치명타!! ::\n");
@@ -205,7 +205,7 @@ int attack(int num) {
 /* 몬스터의 반격: 민첩(speed%) 회피 판정 후 피해 적용.
    플레이어 사망 시 COMBAT_TO_MENU, 아니면 COMBAT_ONGOING. (attack/magic 공용) */
 int monster_counterattack(int num) {
-	int dam = mob_data[num].dam - stat_data.def;
+	int dam = mob_data[num].dam - total_def();
 	if (dam < 0)
 		dam = 0;
 	sleep_ms(500);
@@ -255,7 +255,7 @@ int magic(int num) {
 		return COMBAT_ONGOING;
 	}
 	user_data.mp -= spell->mp;
-	int mdam = spell->dam + stat_data.magic;
+	int mdam = spell->dam + total_magic();
 
 	printf("------------------------------------------\n");
 	printf("\n:: %s 시전! ::\n\n", spell->name);

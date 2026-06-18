@@ -1,6 +1,27 @@
 #include "game.h"
 
 
+/* 착용 장비 보너스를 합산한 실효 스텟 (미착용 슬롯은 -1 이라 건너뜀) */
+int total_power() {
+	int v = stat_data.power;
+	if (user_data.weapon >= 0) v += eq_data[user_data.weapon].power;
+	if (user_data.armor >= 0)  v += eq_data[user_data.armor].power;
+	return v;
+}
+int total_def() {
+	int v = stat_data.def;
+	if (user_data.weapon >= 0) v += eq_data[user_data.weapon].def;
+	if (user_data.armor >= 0)  v += eq_data[user_data.armor].def;
+	return v;
+}
+int total_magic() {
+	int v = stat_data.magic;
+	if (user_data.weapon >= 0) v += eq_data[user_data.weapon].magic;
+	if (user_data.armor >= 0)  v += eq_data[user_data.armor].magic;
+	return v;
+}
+
+
 void stat_view() {
 	clear_screen();
 	printf("-------------------------------------\n\n");
@@ -13,6 +34,10 @@ void stat_view() {
 	printf(":: 크리티컬 : %.1f%% ::\n", stat_data.crit);
 	printf(":: 운 : %d ::\n", stat_data.luck);
 	printf("==> 투자 가능한 스텟 포인트 : %d\n", stat_data.point);
+	printf("-------------------------------------\n");
+	printf(":: 무기   : %s ::\n", user_data.weapon >= 0 ? eq_data[user_data.weapon].name : "없음");
+	printf(":: 방어구 : %s ::\n", user_data.armor >= 0 ? eq_data[user_data.armor].name : "없음");
+	printf(":: (장비 포함) 힘 %d / 방어 %d / 지력 %d ::\n", total_power(), total_def(), total_magic());
 	printf("-------------------------------------\n");
 	pause_screen();
 }
@@ -173,8 +198,8 @@ void level_up() {
 		user_data.maxmp += user_data.level * 5;
 		user_data.mp = user_data.maxmp;
 		printf(":: 최대 MP + %d, MP가 회복되었습니다 ::\n", user_data.level * 5);
-		printf(":: 스텟 포인트 + 5 ::\n\n");
-		stat_data.point += 5;
+		printf(":: 스텟 포인트 + 7 ::\n\n");
+		stat_data.point += 7;
 		printf("-------------------------------------\n");
 
 		if (user_data.level < 11) {

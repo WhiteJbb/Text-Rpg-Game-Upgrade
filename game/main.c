@@ -9,6 +9,8 @@ hpo potionm_data;
 hpo potionb_data;
 int spell_count;
 int mob_count;
+equip* eq_data;
+int equip_count;
 
 
 int main() {
@@ -18,6 +20,7 @@ int main() {
 	mob_load();
 	stat_load();
 	magic_load();
+	equip_load();
 	printf("-------------------------------------\n\n");
 	printf(":: 유저 %s님 '행성 : 지구' 입장! ::\n\n", user_data.name);
 	while (1) {
