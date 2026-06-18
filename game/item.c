@@ -104,10 +104,61 @@ void item_show() {
 	printf("-------------------------------------\n\n");
 	printf(":: %s님의 마법 보유목록 ::\n\n", user_data.name);
 	printf("-------------------------------------\n");
-	printf(":: %s 보유 ::\n", mg_data[0].name);
+	for (int i = 0; i < spell_count; i++) {
+		if (mg_data[i].learned)
+			printf(":: %s (MP %d, 피해 %d+지력) 보유 ::\n", mg_data[i].name, mg_data[i].mp, mg_data[i].dam);
+	}
 	printf("-------------------------------------\n");
 	system("pause");
 	system("cls");
+}
+
+
+/* 마법상점: 보유하지 않은 마법을 골드로 학습한다. (스펠 정의는 magicspell.txt) */
+void magic_shop() {
+	int sel, i;
+	while (1) {
+		system("cls");
+		printf("-------------------------------------\n\n");
+		printf(":: 마법상점 ::       골드 보유량 : %d Gold\n", user_data.gold);
+		printf("\n-------------------------------------\n");
+		for (i = 0; i < spell_count; i++) {
+			if (mg_data[i].learned)
+				printf("%d. %s  - 보유중  (MP %d, 피해 %d)\n", i + 1, mg_data[i].name, mg_data[i].mp, mg_data[i].dam);
+			else
+				printf("%d. %s  - %d Gold  (MP %d, 피해 %d)\n", i + 1, mg_data[i].name, mg_data[i].price, mg_data[i].mp, mg_data[i].dam);
+		}
+		printf("0. 돌아가기\n");
+		printf("\n-------------------------------------\n\n");
+		printf("어떤 마법을 배우시겠습니까? : ");
+		sel = read_int();
+		if (sel == 0) {
+			save();
+			system("cls");
+			return;
+		}
+		if (sel < 1 || sel > spell_count) {
+			printf(":: 다시 입력해주세요 ::\n");
+			system("pause");
+			continue;
+		}
+		mgs* spell = &mg_data[sel - 1];
+		printf("-------------------------------------\n\n");
+		if (spell->learned) {
+			printf(":: 이미 보유한 마법입니다 ::\n");
+		}
+		else if (user_data.gold >= spell->price) {
+			user_data.gold -= spell->price;
+			spell->learned = 1;
+			user_data.spells |= (1 << (sel - 1));
+			printf(":: %s 습득 완료! ::\n", spell->name);
+		}
+		else {
+			printf(":: 골드가 부족합니다 ::\n");
+		}
+		printf("\n-------------------------------------\n\n");
+		system("pause");
+	}
 }
 
 
@@ -128,7 +179,7 @@ void shop_choose() {
 			potion_shop();
 			break;
 		case 2:
-			//magic_shop();
+			magic_shop();
 			break;
 		case 3:
 			system("cls");

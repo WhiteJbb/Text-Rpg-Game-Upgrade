@@ -136,10 +136,6 @@ int damage(int dam, int num) {
 }
 
 
-/*void magic_shop() {
-
-}*/
-
 int fight(int num) {
 	int sel = 0;
 
@@ -217,9 +213,31 @@ int monster_counterattack(int num) {
 	return COMBAT_ONGOING;
 }
 
-/* 파이어볼: mg_data[0]. 마법 피해 = 기본피해(dam) + 지력(magic), MP 소모. */
+/* 보유한 마법 중 하나를 선택해 시전. 피해 = 기본피해(dam) + 지력(magic), MP 소모.
+   취소/MP부족/미보유 시 턴을 소비하지 않고 전투를 계속한다. */
 int magic(int num) {
-	mgs* spell = &mg_data[0];
+	int i;
+	system("cls");
+	printf("------------------------------------------\n");
+	printf(":: 마법 선택 ::   MP %d / %d\n", user_data.mp, user_data.maxmp);
+	printf("------------------------------------------\n");
+	for (i = 0; i < spell_count; i++) {
+		if (mg_data[i].learned)
+			printf("%d. %s  (MP %d, 피해 %d+지력)\n", i + 1, mg_data[i].name, mg_data[i].mp, mg_data[i].dam);
+	}
+	printf("0. 취소\n");
+	printf("------------------------------------------\n");
+	printf("시전할 마법 : ");
+	int sel = read_int();
+	if (sel == 0)
+		return COMBAT_ONGOING;
+	if (sel < 1 || sel > spell_count || !mg_data[sel - 1].learned) {
+		printf(":: 보유하지 않은 마법입니다 ::\n");
+		system("pause");
+		return COMBAT_ONGOING;
+	}
+
+	mgs* spell = &mg_data[sel - 1];
 	if (user_data.mp < spell->mp) {
 		printf("\n:: MP가 부족합니다 (필요 %d / 보유 %d) ::\n", spell->mp, user_data.mp);
 		system("pause");

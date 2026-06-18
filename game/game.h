@@ -40,6 +40,7 @@ typedef struct user {
 	int mp;
 	int maxmp;
 	int gold;
+	int spells;    /* 보유 마법 비트마스크 (bit i = mg_data[i] 보유) */
 }user;
 
 typedef struct mob {
@@ -76,6 +77,8 @@ typedef struct magicspell {
 	char name[20];
 	int mp;
 	int dam;
+	int price;     /* 마법상점 가격 (파이어볼=0, 기본 보유) */
+	int learned;   /* 보유 여부 0/1 (저장은 user.spells 비트마스크로) */
 }mgs;
 
 FILE* open_or_warn(const char* path, const char* mode);
@@ -125,5 +128,6 @@ extern mgs* mg_data;
 extern hpo potions_data;
 extern hpo potionm_data;
 extern hpo potionb_data;
+extern int spell_count;   /* magic_load가 설정하는 마법 개수 */
 
 #endif /* GAME_H */
