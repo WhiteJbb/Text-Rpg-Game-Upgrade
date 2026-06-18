@@ -209,8 +209,12 @@ void new_user() {
 	printf(":: '행성 : 지구'에 처음 입장하셨습니다 ::\n\n");
 	printf("------------------------------------------------\n");
 	printf("닉네임을 등록해주세요 : ");
+#ifdef __EMSCRIPTEN__
+	web_read_line(user_data.name, sizeof(user_data.name));
+#else
 	fgets(user_data.name, sizeof(user_data.name), stdin);
-    user_data.name[strcspn(user_data.name, "\n")] = 0;
+	user_data.name[strcspn(user_data.name, "\n")] = 0;
+#endif
     printf("\n:: %s님 환영합니다! ::\n", user_data.name);
 
 	user_data.first = 1;

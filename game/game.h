@@ -13,6 +13,12 @@
 #include <unistd.h>   /* usleep (POSIX) */
 #include <sys/stat.h> /* mkdir (POSIX) */
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void web_printf(const char* fmt, ...);    /* 웹: 출력을 브라우저 터미널로 */
+void web_read_line(char* buf, int size);  /* 웹: 한 줄 입력 (브라우저 비동기) */
+#define printf(...) web_printf(__VA_ARGS__)
+#endif
 
 /* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
    - 기존에는 "C:\\test\\..." 절대 경로로 고정되어 다른 PC에서 실행이 불가능했음
