@@ -1,0 +1,15 @@
+# 빌드 산출물 (build artifacts)
+*.exe
+*.o
+*.obj
+
+# Visual Studio
+.vs/
+Debug/
+Release/
+x64/
+*.ilk
+*.pdb
+
+# 임시 파일
+*.tmp
