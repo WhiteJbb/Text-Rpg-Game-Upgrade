@@ -150,7 +150,7 @@ int fight(int num) {
 		printf("\n\n------------------------------------------");
 		printf("\n\n:: Lv.%d ::\n:: %s :: \n:: HP : %d / %d ::", mob_data[num].level, mob_data[num].name, mob_data[num].hp, mob_data[num].maxhp);
 		printf("\n\n     VS              \n\n");
-		printf(":: Lv.%d :: \n:: %s :: \n:: HP : %d / %d ::\n\n", user_data.level, user_data.name, user_data.hp, user_data.maxhp);
+		printf(":: Lv.%d :: \n:: %s :: \n:: HP : %d / %d ::\n:: MP : %d / %d ::\n\n", user_data.level, user_data.name, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 		printf("------------------------------------------\n");
 		printf("1. 공격, 2. 마법, 3. 아이템사용 : ");
 		sel = read_int();
@@ -160,7 +160,7 @@ int fight(int num) {
 			result = attack(num);
 			break;
 		case 2:
-			//magic();
+			result = magic(num);
 			break;
 		case 3:
 			potion_menu();
@@ -174,41 +174,73 @@ int fight(int num) {
 
 
 int attack(int num) {
-	int dam = mob_data[num].dam - stat_data.def;
-	if (dam < 0)
-		dam = 0;
-
 	printf("------------------------------------------\n");
 	printf("\n:: %s의 공격! ::\n\n", user_data.name);
 	printf("------------------------------------------\n\n");
 	Sleep(500);
-	if (mob_data[num].hp >= stat_data.power) {
-		mob_data[num].hp -= stat_data.power;
-		printf(":: ""%s"":에게 %d의 피해를 주었다. ::\n\n", mob_data[num].name, stat_data.power);
-		printf("------------------------------------------\n");
+
+	/* 치명타: stat_data.crit 는 퍼센트(예: 0.5%). rand()%10000 으로 소수 1자리까지 판정 */
+	int pdam = stat_data.power;
+	if ((rand() % 10000) < (int)(stat_data.crit * 100)) {
+		pdam *= 2;
+		printf(":: 치명타!! ::\n");
 	}
-	else if (mob_data[num].hp < stat_data.power && mob_data[num].hp > 0) {
-		printf(":: ""%s"":에게 %d의 피해를 주었다. ::\n\n", mob_data[num].name, mob_data[num].hp);
-		printf("------------------------------------------\n");
-		mob_data[num].hp -= mob_data[num].hp;
-	}
+	int dealt = (mob_data[num].hp < pdam) ? mob_data[num].hp : pdam;
+	mob_data[num].hp -= dealt;
+	printf(":: ""%s"":에게 %d의 피해를 주었다. ::\n\n", mob_data[num].name, dealt);
+	printf("------------------------------------------\n");
+
 	if (hp_out(num))
 		return COMBAT_CONTINUE;   /* 몬스터 처치 -> 반격 생략, 탐험 계속 */
+	return monster_counterattack(num);
+}
+
+/* 몬스터의 반격: 민첩(speed%) 회피 판정 후 피해 적용.
+   플레이어 사망 시 COMBAT_TO_MENU, 아니면 COMBAT_ONGOING. (attack/magic 공용) */
+int monster_counterattack(int num) {
+	int dam = mob_data[num].dam - stat_data.def;
+	if (dam < 0)
+		dam = 0;
 	Sleep(500);
 	printf("------------------------------------------\n");
 	printf("\n:: %s의 공격! ::\n\n", mob_data[num].name);
 	Sleep(500);
+	if ((rand() % 100) < stat_data.speed) {
+		printf(":: 민첩하게 공격을 회피했다! ::\n");
+		printf("\n-------------------------------------\n");
+		system("pause");
+		return COMBAT_ONGOING;
+	}
 	if (damage(dam, num))
 		return COMBAT_TO_MENU;    /* 플레이어 사망 -> 메뉴 복귀 */
 	system("pause");
 	return COMBAT_ONGOING;
 }
 
+/* 파이어볼: mg_data[0]. 마법 피해 = 기본피해(dam) + 지력(magic), MP 소모. */
+int magic(int num) {
+	mgs* spell = &mg_data[0];
+	if (user_data.mp < spell->mp) {
+		printf("\n:: MP가 부족합니다 (필요 %d / 보유 %d) ::\n", spell->mp, user_data.mp);
+		system("pause");
+		return COMBAT_ONGOING;
+	}
+	user_data.mp -= spell->mp;
+	int mdam = spell->dam + stat_data.magic;
 
-/*void magic(int num, int reg) {
+	printf("------------------------------------------\n");
+	printf("\n:: %s 시전! ::\n\n", spell->name);
+	printf("------------------------------------------\n\n");
+	Sleep(500);
+	int dealt = (mob_data[num].hp < mdam) ? mob_data[num].hp : mdam;
+	mob_data[num].hp -= dealt;
+	printf(":: ""%s"":에게 %d의 마법 피해! (MP -%d) ::\n\n", mob_data[num].name, dealt, spell->mp);
+	printf("------------------------------------------\n");
 
+	if (hp_out(num))
+		return COMBAT_CONTINUE;
+	return monster_counterattack(num);
 }
-*/
 
 int hp_out(int num) {
 

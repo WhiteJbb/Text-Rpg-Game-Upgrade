@@ -170,6 +170,9 @@ void level_up() {
 		printf(":: 최대 HP  + %d ::\n", user_data.level * 10);
 		user_data.hp = user_data.maxhp;
 		printf(":: HP가 회복되었습니다 ::\n");
+		user_data.maxmp += user_data.level * 5;
+		user_data.mp = user_data.maxmp;
+		printf(":: 최대 MP + %d, MP가 회복되었습니다 ::\n", user_data.level * 5);
 		printf(":: 스텟 포인트 + 5 ::\n\n");
 		stat_data.point += 5;
 		printf("-------------------------------------\n");
