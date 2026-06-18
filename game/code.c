@@ -19,6 +19,14 @@
 #define COMBAT_TO_MENU  1   /* 메인 메뉴로 복귀 */
 #define COMBAT_ONGOING  2   /* 전투 진행 중 (같은 몬스터 계속) */
 
+/* 포션 회복량 / 상점 가격 (매직넘버 분리) */
+#define POTION_S_HEAL  20
+#define POTION_M_HEAL  100
+#define POTION_L_HEAL  500
+#define POTION_S_PRICE 100
+#define POTION_M_PRICE 500
+#define POTION_L_PRICE 1000
+
 typedef struct user {
 	int first;
 	char name[20];
@@ -29,7 +37,6 @@ typedef struct user {
 	int mp;
 	int maxmp;
 	int gold;
-	char** item;
 }user;
 
 typedef struct mob {
@@ -78,7 +85,9 @@ void magic_load();
 void adventure(int region);
 void adventure_control();
 void potion_earn(int x, int y, int z);
-void potion_use();
+void potion_menu();
+int use_one_potion(hpo* potion, int heal, const char* name);
+void buy_potion(hpo* potion, int price, const char* name);
 void item_show();
 void save();
 void write_save_files();
@@ -96,7 +105,6 @@ void shop_choose();
 void potion_shop();
 void magic_shop();
 int fight(int num);
-void fight_pouse(int num);
 int attack(int num);
 void magic();
 void stat_view();
@@ -104,7 +112,6 @@ int hp_out(int num);
 void stat_set();
 void slot_machine();
 void help();
-void cheat();
 
 user user_data;
 stat stat_data;
@@ -113,8 +120,6 @@ mgs* mg_data;
 hpo potions_data;
 hpo potionm_data;
 hpo potionb_data;
-
-int finish;
 
 /* 파일을 열고, 실패하면 경고 메시지를 출력한 뒤 NULL을 반환한다.
    호출부에서 NULL 여부를 확인해 복구 방식을 결정한다. */
@@ -145,11 +150,6 @@ int read_int() {
 	}
 	while ((c = getchar()) != '\n' && c != EOF);
 	return value;
-}
-
-void cheat() {
-	stat_data.point += 100;
-	printf("스텟포인트 100 지급");
 }
 
 int main() {
@@ -249,12 +249,7 @@ void user_load() {
 
 	fclose(fp);
 
-	finish = 0;
-
-
 	if (user_data.first == 0) {
-
-		finish = 0;
 		new_user();
 	}
 }
@@ -491,9 +486,9 @@ void new_user() {
 	potions_data.count = 3;
 	potionm_data.count = 1;
 	potionb_data.count = 0;
-	potions_data.healing = 20;
-	potionm_data.healing = 100;
-	potionb_data.healing = 500;
+	potions_data.healing = POTION_S_HEAL;
+	potionm_data.healing = POTION_M_HEAL;
+	potionb_data.healing = POTION_L_HEAL;
 	stat_data.power = 5;
 	stat_data.speed = 5;
 	stat_data.def = 5;
@@ -554,9 +549,9 @@ void clear() {
 	user_data.mp = 0;
 	user_data.maxmp = 0;
 	user_data.gold = 0;
-	potions_data.count = 0; potions_data.healing = 20;
-	potionm_data.count = 0; potionm_data.healing = 100;
-	potionb_data.count = 0; potionb_data.healing = 500;
+	potions_data.count = 0; potions_data.healing = POTION_S_HEAL;
+	potionm_data.count = 0; potionm_data.healing = POTION_M_HEAL;
+	potionb_data.count = 0; potionb_data.healing = POTION_L_HEAL;
 	stat_data.power = 5; stat_data.speed = 5; stat_data.def = 5;
 	stat_data.crit = 0.1; stat_data.magic = 5; stat_data.luck = 1; stat_data.point = 0;
 
@@ -719,7 +714,7 @@ int monster(int num) {
 				return fight(num);
 			}
 		case 3:
-			potion_use();
+			potion_menu();
 			break;   /* 회복 후 다시 조우 프롬프트로 돌아감 */
 		default:
 			break;
@@ -795,11 +790,32 @@ void potion_earn(int x, int y, int z) {
 	}
 }
 
-void potion_use() {
-	int sub;
+/* 포션 1종 사용 시도: 회복했으면 1, 보유 없음/회복 불필요면 메시지 출력 후 0 반환.
+   기존 potion_use/fight_pouse의 거의 동일한 ~120줄 중복을 이 함수로 일원화. */
+int use_one_potion(hpo* potion, int heal, const char* name) {
+	int sub = user_data.maxhp - user_data.hp;
+	if (potion->count == 0) {
+		printf(":: [system] %s을(를) 보유하고있지 않습니다. ::\n", name);
+		return 0;
+	}
+	if (sub == 0) {
+		printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
+		return 0;
+	}
+	int recovered = (sub < heal) ? sub : heal;   /* 최대 HP를 넘지 않도록 부족분만큼만 */
+	user_data.hp += recovered;
+	potion->count--;
+	printf("\n:: %s 사용 ::\n", name);
+	printf(":: HP %d이 회복되었습니다 ::\n", recovered);
+	printf(":: HP %d -> %d ::\n", user_data.hp - recovered, user_data.hp);
+	printf(":: %s %d개 -> %d개 ::\n", name, potion->count + 1, potion->count);
+	return 1;
+}
+
+/* 포션 사용 메뉴 (조우 중·전투 중 공용). 4번 선택 시 저장 후 복귀. */
+void potion_menu() {
 	int sel;
 	while (1) {
-		sub = user_data.maxhp - user_data.hp;
 		system("cls");
 		printf("-------------------------------------\n\n");
 		printf(":: 어떤 포션을 사용하시겠습니까? ::\n\n");
@@ -812,110 +828,24 @@ void potion_use() {
 		sel = read_int();
 		switch (sel) {
 		case 1:
-			if (potions_data.count != 0) {
-				if (sub < 20 && sub != 0) {
-					user_data.hp += sub;
-					potions_data.count--;
-					printf("\n:: HP포션(소) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(소) %d개 -> %d개 ::\n", potions_data.count + 1, potions_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 20) {
-					user_data.hp += potions_data.healing;
-					potions_data.count--;
-					printf("\n:: HP포션(소) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potions_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potions_data.healing, user_data.hp);
-					printf(":: HP포션(소) %d개 -> %d개 ::\n", potions_data.count + 1, potions_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potions_data.count == 0) {
-				printf(":: [system] HP포션(소)을 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
+			use_one_potion(&potions_data, POTION_S_HEAL, "HP포션(소)");
+			system("pause");
+			break;
 		case 2:
-			if (potionm_data.count != 0) {
-				if (sub < 100 && sub != 0) {
-					user_data.hp += sub;
-					potionm_data.count--;
-					printf("\n:: HP포션(중) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(중) %d개 -> %d개 ::\n", potionm_data.count + 1, potionm_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 100) {
-					user_data.hp += potionm_data.healing;
-					potionm_data.count--;
-					printf("\n:: HP포션(중) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potionm_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potionm_data.healing, user_data.hp);
-					printf(":: HP포션(중) %d개 -> %d개 ::\n", potionm_data.count + 1, potionm_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potionm_data.count == 0) {
-				printf(":: [system] HP포션(중)을 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
+			use_one_potion(&potionm_data, POTION_M_HEAL, "HP포션(중)");
+			system("pause");
+			break;
 		case 3:
-			if (potionb_data.count != 0) {
-				if (sub < 500 && sub != 0) {
-					user_data.hp += sub;
-					potionb_data.count--;
-					printf("\n:: HP포션(대) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(대) %d개 -> %d개 ::\n", potionb_data.count + 1, potionb_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 500) {
-					user_data.hp += potionb_data.healing;
-					potionb_data.count--;
-					printf("\n:: HP포션(대) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potionb_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potionb_data.healing, user_data.hp);
-					printf(":: HP포션(대) %d개 -> %d개 ::\n", potionb_data.count + 1, potionb_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potionb_data.count == 0) {
-				printf(":: [system] HP포션(대)를 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
+			use_one_potion(&potionb_data, POTION_L_HEAL, "HP포션(대)");
+			system("pause");
+			break;
 		case 4:
 			printf(":: 돌아갑니다. ::\n");
 			save();
 			return;
+		default:
+			break;
 		}
-
 	}
 }
 
@@ -968,6 +898,22 @@ void shop_choose() {
 	}
 }
 
+/* 포션 구매 시도: 골드가 충분하면 구매, 아니면 부족 안내. (3종 중복 로직 일원화) */
+void buy_potion(hpo* potion, int price, const char* name) {
+	printf("-------------------------------------\n\n");
+	if (user_data.gold >= price) {
+		potion->count += 1;
+		user_data.gold -= price;
+		printf(":: %s 구매완료 ::\n", name);
+		printf(":: 현재 보유 : %d개 -> %d개 ::\n", potion->count - 1, potion->count);
+	}
+	else {
+		printf(":: 골드가 부족합니다 ::\n");
+	}
+	printf("\n-------------------------------------\n\n");
+	system("pause");
+}
+
 void potion_shop() {
 	int sel;
 	while (1) {
@@ -975,9 +921,9 @@ void potion_shop() {
 		printf("-------------------------------------\n\n");
 		printf(":: 물약상점 ::       골드 보유량  : %d Gold\n", user_data.gold);
 		printf("\n-------------------------------------\n\n");
-		printf("1. HP포션(소) : 100 Gold\n");
-		printf("2. HP포션(중) : 500 Gold\n");
-		printf("3. HP포션(대) : 1000 Gold\n");
+		printf("1. HP포션(소) : %d Gold\n", POTION_S_PRICE);
+		printf("2. HP포션(중) : %d Gold\n", POTION_M_PRICE);
+		printf("3. HP포션(대) : %d Gold\n", POTION_L_PRICE);
 		printf("4. 돌아가기\n");
 		printf("\n-------------------------------------\n\n");
 		printf("무엇을 구매하시겠습니까? : ");
@@ -985,59 +931,14 @@ void potion_shop() {
 
 		switch (sel) {
 		case 1:
-			if (user_data.gold >= 100) {
-				potions_data.count += 1;
-				user_data.gold -= 100;
-				printf("-------------------------------------\n\n");
-				printf(":: HP포션(소) 구매완료 ::\n");
-				printf(":: 현재 보유 : %d개 -> %d개 ::\n", potions_data.count - 1, potions_data.count);
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
-			else if (user_data.gold < 100) {
-				printf("-------------------------------------\n\n");
-				printf(":: 골드가 부족합니다 ::\n");
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
+			buy_potion(&potions_data, POTION_S_PRICE, "HP포션(소)");
+			break;
 		case 2:
-			if (user_data.gold >= 500) {
-				potionm_data.count += 1;
-				user_data.gold -= 500;
-				printf("-------------------------------------\n\n");
-				printf(":: HP포션(중) 구매완료 ::\n");
-				printf(":: 현재 보유 : %d개 -> %d개 ::\n", potionm_data.count - 1, potionm_data.count);
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
-			else if (user_data.gold < 500) {
-				printf("-------------------------------------\n\n");
-				printf(":: 골드가 부족합니다 ::\n");
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
+			buy_potion(&potionm_data, POTION_M_PRICE, "HP포션(중)");
+			break;
 		case 3:
-			if (user_data.gold >= 1000) {
-				potionb_data.count += 1;
-				user_data.gold -= 1000;
-				printf("-------------------------------------\n\n");
-				printf(":: HP포션(대) 구매완료 ::\n");
-				printf(":: 현재 보유 : %d개 -> %d개 ::\n", potionb_data.count - 1, potionb_data.count);
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
-			else if (user_data.gold < 1000) {
-				printf("-------------------------------------\n\n");
-				printf(":: 골드가 부족합니다 ::\n");
-				printf("\n-------------------------------------\n\n");
-				system("pause");
-				break;
-			}
+			buy_potion(&potionb_data, POTION_L_PRICE, "HP포션(대)");
+			break;
 		case 4:
 			printf("-------------------------------------\n\n");
 			printf(":: 돌아갑니다 ::\n");
@@ -1045,11 +946,10 @@ void potion_shop() {
 			save();
 			system("cls");
 			return;
+		default:
+			break;
 		}
-
 	}
-
-
 }
 
 /*void magic_shop() {
@@ -1079,7 +979,7 @@ int fight(int num) {
 			//magic();
 			break;
 		case 3:
-			fight_pouse(num);
+			potion_menu();
 			break;
 		}
 		if (result == COMBAT_CONTINUE || result == COMBAT_TO_MENU)
@@ -1123,130 +1023,6 @@ int attack(int num) {
 
 }
 */
-
-void fight_pouse(int num) {
-	int sub;
-	int sel;
-	while (1) {
-		sub = user_data.maxhp - user_data.hp;
-		system("cls");
-		printf("-------------------------------------\n\n");
-		printf(":: 어떤 포션을 사용하시겠습니까? ::\n\n");
-		printf("-------------------------------------\n");
-		printf(":: HP포션(소) %d개 보유 ::\n", potions_data.count);
-		printf(":: HP포션(중) %d개 보유 ::\n", potionm_data.count);
-		printf(":: HP포션(대) %d개 보유 ::\n", potionb_data.count);
-		printf("-------------------------------------\n\n");
-		printf("1. HP포션(소) , 2. HP포션(중), 3. HP포션(대) 4. 돌아가기 : ");
-		sel = read_int();
-		switch (sel) {
-		case 1:
-			if (potions_data.count != 0) {
-				if (sub < 20 && sub != 0) {
-					user_data.hp += sub;
-					potions_data.count--;
-					printf("\n:: HP포션(소) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(소) %d개 -> %d개 ::\n", potions_data.count + 1, potions_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 20) {
-					user_data.hp += potions_data.healing;
-					potions_data.count--;
-					printf("\n:: HP포션(소) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potions_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potions_data.healing, user_data.hp);
-					printf(":: HP포션(소) %d개 -> %d개 ::\n", potions_data.count + 1, potions_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potions_data.count == 0) {
-				printf(":: [system] HP포션(소)을 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
-		case 2:
-			if (potionm_data.count != 0) {
-				if (sub < 100 && sub != 0) {
-					user_data.hp += sub;
-					potionm_data.count--;
-					printf("\n:: HP포션(중) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(중) %d개 -> %d개 ::\n", potionm_data.count + 1, potionm_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 100) {
-					user_data.hp += potionm_data.healing;
-					potionm_data.count--;
-					printf("\n:: HP포션(중) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potionm_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potionm_data.healing, user_data.hp);
-					printf(":: HP포션(중) %d개 -> %d개 ::\n", potionm_data.count + 1, potionm_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potionm_data.count == 0) {
-				printf(":: [system] HP포션(중)을 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
-		case 3:
-			if (potionb_data.count != 0) {
-				if (sub < 500 && sub != 0) {
-					user_data.hp += sub;
-					potionb_data.count--;
-					printf("\n:: HP포션(대) 사용 ::\n");
-					printf(":: HP %d이 회복되었습니다 ::\n", sub);
-					printf(":: HP %d -> %d ::\n", user_data.hp - sub, user_data.hp);
-					printf(":: HP포션(대) %d개 -> %d개 ::\n", potionb_data.count + 1, potionb_data.count);
-					system("pause");
-					break;
-				}
-				else if (sub >= 500) {
-					user_data.hp += potionb_data.healing;
-					potionb_data.count--;
-					printf("\n:: HP포션(대) 사용 ::");
-					printf(":: HP %d이 회복되었습니다 ::\n", potionb_data.healing);
-					printf(":: HP %d -> %d ::\n", user_data.hp - potionb_data.healing, user_data.hp);
-					printf(":: HP포션(대) %d개 -> %d개 ::\n", potionb_data.count + 1, potionb_data.count);
-					system("pause");
-					break;
-				}
-				else {
-					printf(":: [system] 데미지를 입지 않아 회복할 수 없습니다. ::\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (potionb_data.count == 0) {
-				printf(":: [system] HP포션(대)를 보유하고있지 않습니다. ::\n");
-				system("pause");
-				break;
-			}
-		case 4:
-			printf(":: 돌아갑니다. ::\n");
-			save();
-			return;
-		}
-
-	}
-}
 
 int hp_out(int num) {
 
