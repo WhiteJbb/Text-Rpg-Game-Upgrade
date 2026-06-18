@@ -1,5 +1,55 @@
 #include "game.h"
 
+#ifdef __EMSCRIPTEN__
+#include <stdarg.h>
+
+/* xterm.js 입력 큐(Module.inq, UTF-8 바이트)에서 한 바이트 꺼냄 (없으면 -1) */
+EM_JS(int, em_getch, (), {
+	if (!Module.inq || Module.inq.length === 0) return -1;
+	return Module.inq.shift();
+});
+/* 브라우저 터미널에 문자열 출력 */
+EM_JS(void, em_write, (const char* s), {
+	if (Module.termWrite) Module.termWrite(UTF8ToString(s));
+});
+
+/* printf 대체: 포맷 후 터미널로 출력 */
+void web_printf(const char* fmt, ...) {
+	char buf[2048];
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	em_write(buf);
+}
+
+/* 입력이 올 때까지 양보(emscripten_sleep)하며 한 바이트 받기 */
+static int web_getch(void) {
+	int c;
+	while ((c = em_getch()) < 0) emscripten_sleep(16);
+	return c;
+}
+
+/* 한 줄 입력: 에코 + 백스페이스 처리. 개행 제외하고 buf(UTF-8)에 저장 */
+void web_read_line(char* buf, int size) {
+	int n = 0;
+	for (;;) {
+		int c = web_getch();
+		if (c == '\r' || c == '\n') { em_write("\r\n"); break; }
+		if (c == 8 || c == 127) {
+			if (n > 0) { n--; em_write("\b \b"); }
+			continue;
+		}
+		if (n < size - 1) {
+			buf[n++] = (char)c;
+			char e[2] = { (char)c, '\0' };
+			em_write(e);
+		}
+	}
+	buf[n] = '\0';
+}
+#endif
+
 
 /* 파일을 열고, 실패하면 경고 메시지를 출력한 뒤 NULL을 반환한다.
    호출부에서 NULL 여부를 확인해 복구 방식을 결정한다. */
@@ -26,6 +76,13 @@ void cleanup() {
 /* 정수 입력을 안전하게 읽는다. 잘못된 입력이면 입력 버퍼를 비우고 INT_MIN을 반환.
    호출부는 INT_MIN(또는 범위 밖)을 잘못된 입력으로 처리한다. */
 int read_int() {
+#if defined(__EMSCRIPTEN__)
+	char line[64];
+	web_read_line(line, sizeof(line));
+	int v;
+	if (sscanf(line, "%d", &v) != 1) return INT_MIN;
+	return v;
+#else
 	int value;
 	int c;
 	if (scanf("%d", &value) != 1) {
@@ -34,6 +91,7 @@ int read_int() {
 	}
 	while ((c = getchar()) != '\n' && c != EOF);
 	return value;
+#endif
 }
 
 
@@ -49,7 +107,9 @@ void init_console() {
 
 /* 화면 지우기 */
 void clear_screen() {
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+	em_write("\033[2J\033[H");   /* ANSI: 화면 지우고 커서 홈으로 (xterm.js 해석) */
+#elif defined(_WIN32)
 	system("cls");
 #else
 	system("clear");
@@ -58,7 +118,11 @@ void clear_screen() {
 
 /* 키 입력 대기 */
 void pause_screen() {
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+	char tmp[8];
+	web_printf("계속하려면 Enter 키를 누르세요...");
+	web_read_line(tmp, sizeof(tmp));
+#elif defined(_WIN32)
 	system("pause");
 #else
 	int c;
@@ -69,7 +133,9 @@ void pause_screen() {
 
 /* ms 밀리초 대기 */
 void sleep_ms(int ms) {
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+	emscripten_sleep(ms);
+#elif defined(_WIN32)
 	Sleep(ms);
 #else
 	usleep((useconds_t)ms * 1000);

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>행성: 지구 — Text RPG</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+<style>
+  :root { --crt: #33ff66; }
+  html, body {
+    height: 100%; margin: 0;
+    background: radial-gradient(circle at 50% 30%, #0c160c 0%, #050805 70%, #000 100%);
+    color: var(--crt);
+    font-family: "Consolas", "D2Coding", "Courier New", monospace;
+  }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 10px; }
+  h1 { margin: 8px 0 0; font-size: 22px; letter-spacing: 2px; text-shadow: 0 0 8px var(--crt); }
+  #frame {
+    position: relative; width: 860px; max-width: 95vw;
+    padding: 14px; border-radius: 10px;
+    background: #000; border: 2px solid #1f5e33;
+    box-shadow: 0 0 40px rgba(51,255,102,.18), inset 0 0 60px rgba(51,255,102,.06);
+  }
+  /* CRT 스캔라인 + 곡면 비네팅 */
+  #frame::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
+    background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.28) 2px 4px);
+    box-shadow: inset 0 0 120px rgba(0,0,0,.6);
+  }
+  .xterm { padding: 4px; }
+  #hint { font-size: 12px; color: #6abf7a; opacity: .8; }
+  a { color: #6abf7a; }
+</style>
+</head>
+<body>
+  <h1>🌍 행성 : 지구</h1>
+  <div id="frame"><div id="terminal"></div></div>
+  <div id="hint">메뉴 번호 + Enter로 플레이합니다 · 새로고침하면 처음부터 (세이브는 브라우저 메모리)</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script>
+    const term = new Terminal({
+      cols: 80, rows: 30, cursorBlink: true, convertEol: true,
+      fontFamily: '"Consolas","D2Coding","Courier New",monospace', fontSize: 15,
+      theme: { background: "#000000", foreground: "#33ff66", cursor: "#33ff66", cursorAccent: "#000000" }
+    });
+    term.open(document.getElementById("terminal"));
+    term.focus();
+    document.addEventListener("click", () => term.focus());
+
+    // Emscripten 모듈 설정: 출력은 터미널로, 입력은 UTF-8 바이트 큐로
+    var Module = {
+      inq: [],
+      termWrite: (s) => term.write(s),
+      print: (s) => term.write(s + "\r\n"),
+      printErr: (s) => console.error(s),
+    };
+    const _enc = new TextEncoder();
+    term.onData((d) => { for (const b of _enc.encode(d)) Module.inq.push(b); });
+  </script>
+  <script src="game.js"></script>
+</body>
+</html>

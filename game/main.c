@@ -1,7 +1,7 @@
 #include "game.h"
 
 user user_data;
-stat stat_data;
+gamestat stat_data;
 mob* mob_data;
 mgs* mg_data;
 hpo potions_data;

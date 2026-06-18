@@ -13,6 +13,12 @@
 #include <unistd.h>   /* usleep (POSIX) */
 #include <sys/stat.h> /* mkdir (POSIX) */
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void web_printf(const char* fmt, ...);    /* 웹: 출력을 브라우저 터미널로 */
+void web_read_line(char* buf, int size);  /* 웹: 한 줄 입력 (브라우저 비동기) */
+#define printf(...) web_printf(__VA_ARGS__)
+#endif
 
 /* 데이터 / 저장 파일 경로 (실행 폴더 기준 상대 경로)
    - 기존에는 "C:\\test\\..." 절대 경로로 고정되어 다른 PC에서 실행이 불가능했음
@@ -75,7 +81,7 @@ typedef struct healthpotion {
 	int healing;
 }hpo;
 
-typedef struct stat {
+typedef struct gamestat {
 	int power;
 	int speed;
 	int def;
@@ -83,7 +89,7 @@ typedef struct stat {
 	float crit;
 	int luck;
 	int point;
-}stat;
+}gamestat;
 
 typedef struct magicspell {
 	char name[32];
@@ -155,7 +161,7 @@ void help();
 
 /* 전역 변수 (정의는 main.c) */
 extern user user_data;
-extern stat stat_data;
+extern gamestat stat_data;
 extern mob* mob_data;
 extern mgs* mg_data;
 extern hpo potions_data;
