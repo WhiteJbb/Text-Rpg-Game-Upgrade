@@ -9,18 +9,18 @@ hpo potionm_data;
 hpo potionb_data;
 int spell_count;
 int mob_count;
+equip* eq_data;
+int equip_count;
 
 
 int main() {
-	/* Windows 콘솔 입출력을 UTF-8로 설정 — 소스/데이터가 모두 UTF-8이라
-	   한글이 깨지지 않게 한다. (gcc는 기본 UTF-8, MSVC는 /utf-8 옵션 필요) */
-	SetConsoleOutputCP(CP_UTF8);
-	SetConsoleCP(CP_UTF8);
+	init_console();   /* 콘솔 UTF-8 설정 (플랫폼별 래퍼) */
 	srand((int)time(NULL));
 	user_load();
 	mob_load();
 	stat_load();
 	magic_load();
+	equip_load();
 	printf("-------------------------------------\n\n");
 	printf(":: 유저 %s님 '행성 : 지구' 입장! ::\n\n", user_data.name);
 	while (1) {
@@ -64,7 +64,7 @@ int main() {
 			printf(":: 다시 선택해주세요 ::");
 			break;
 		}
-		system("cls");
+		clear_screen();
 
 	}
 
@@ -105,22 +105,22 @@ void slot_machine() {
 	int percent = 0;
 	percent = rand() % 10000 + 1;
 	while (i < 6) {
-		system("cls");
+		clear_screen();
 		printf("■□■□■□■□■□■□■□■□■□■□■□■□\n\n");
 		printf(":: 슬롯머신 :: - 넣은 돈을 2배 불려드립니다\n\n");
 		printf("■□■□■□■□■□■□■□■□■□■□■□■□\n\n");
-		Sleep(100);
-		system("cls");
+		sleep_ms(100);
+		clear_screen();
 		printf("□■□■□■□■□■□■□■□■□■□■□■□■\n\n");
 		printf(":: 슬롯머신 :: - 넣은 돈을 2배 불려드립니다\n\n");
 		printf("□■□■□■□■□■□■□■□■□■□■□■□■\n\n");
-		Sleep(100);
+		sleep_ms(100);
 		i++;
 	}
 	if (user_data.gold == 0) {
 		printf(":: 보유하고 계신 Gold가 없습니다 ::\n");
-		system("pause");
-		system("cls");
+		pause_screen();
+		clear_screen();
 		return;
 	}
 	else if (user_data.gold > 0) {
@@ -128,30 +128,30 @@ void slot_machine() {
 		much = read_int();
 		if (much <= 0) {
 			printf(":: 올바른 금액을 입력해주십시오 ::\n");
-			system("pause");
+			pause_screen();
 		}
 		else if (much > user_data.gold) {
 			printf(":: 보유 골드보다 많이 걸 수 없습니다 ::\n");
-			system("pause");
+			pause_screen();
 		}
 		else {
 			printf("\n\n:: - %d Gold ::\n\n", much);
 			printf(":: 슬롯머신을 가동합니다 ::\n\n");
 			user_data.gold -= much;
-			Sleep(250);
+			sleep_ms(250);
 			printf("★      ●       ◆\n\n");
-			Sleep(250);
+			sleep_ms(250);
 			printf("★      ◆       ●\n\n");
-			Sleep(250);
+			sleep_ms(250);
 			printf("◆      ●       ★\n\n");
-			Sleep(250);
+			sleep_ms(250);
 			printf("●      ★       ◆\n\n");
-			Sleep(250);
+			sleep_ms(250);
 			printf("●      ◆       ★\n\n");
 			if (percent < 50 + (stat_data.luck * 50)) {
-				Sleep(1000);
+				sleep_ms(1000);
 				printf("★       ★       ★\n\n");
-				Sleep(100);
+				sleep_ms(100);
 				printf(":: 당첨!!!! ::\n");
 				printf(":: 축하드립니다 ::\n\n");
 				printf("------------------------------------------\n\n");
@@ -159,18 +159,18 @@ void slot_machine() {
 				printf("------------------------------------------\n");
 				user_data.gold += much * 2;
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 			}
 			else {
-				Sleep(1000);
+				sleep_ms(1000);
 				printf("★      ★       ◆\n\n");
-				Sleep(50);
+				sleep_ms(50);
 				printf(":: 당첨되지 않으셨습니다 ::\n");
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return;
 			}
 		}
@@ -179,7 +179,7 @@ void slot_machine() {
 
 
 void help() {
-	system("cls");
+	clear_screen();
 	printf("----------------------------------------\n\n");
 	printf(":: 행성 지구 이용 가이드 ::\n\n");
 	printf("1. 탐험 : 탐험을 통해 골드와 경험치, 아이템을 얻을 수 있습니다. \n");
@@ -196,6 +196,6 @@ void help() {
 	printf("   - 마법 : 파이어볼 (MP 소모, 피해 = 기본 + 지력)\n");
 	printf("   - 민첩 : 적의 공격을 회피할 확률\n");
 	printf("\n----------------------------------------\n");
-	system("pause");
+	pause_screen();
 }
 

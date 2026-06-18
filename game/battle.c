@@ -2,7 +2,7 @@
 
 
 void adventure_control() {
-	system("cls");
+	clear_screen();
 	int num;
 	printf("-------------------------------------\n\n");
 	printf("1. 몬스터의 초원 (Lv.1 ~)\n");
@@ -13,7 +13,7 @@ void adventure_control() {
 	printf("\n-------------------------------------\n");
 	printf("어느지역으로 가시겠습니까? : ");
 	num = read_int();
-	system("cls");
+	clear_screen();
 	adventure(num);
 }
 
@@ -32,20 +32,20 @@ void adventure(int region) {
 		return;                       /* 메뉴로 복귀 */
 	if (region < 1 || region > 4) {
 		printf(":: 잘못된 지역입니다 ::\n");
-		system("pause");
+		pause_screen();
 		return;
 	}
 
 	int base = (region - 1) * 4;      /* 이 지역의 첫 몬스터 인덱스 */
 	if (base + 3 >= mob_count) {
 		printf(":: 아직 준비되지 않은 지역입니다 ::\n");
-		system("pause");
+		pause_screen();
 		return;
 	}
 	if (user_data.level < min_level[region]) {
 		printf(":: '%s'은(는) 권장 레벨 %d 이상부터 입장할 수 있습니다. (현재 Lv.%d) ::\n",
 			names[region], min_level[region], user_data.level);
-		system("pause");
+		pause_screen();
 		return;
 	}
 
@@ -86,13 +86,13 @@ int monster(int num) {
 			if (run >= 30) {
 				printf("\n:: 무사히 도망쳤다 ::\n");
 				inside_save();
-				system("pause");
-				system("cls");
+				pause_screen();
+				clear_screen();
 				return COMBAT_TO_MENU;
 			}
 			else {
 				printf("\n:: 도망치지 못했다 ::\n");
-				Sleep(500);
+				sleep_ms(500);
 				return fight(num);
 			}
 		case 3:
@@ -108,25 +108,25 @@ int monster(int num) {
 int damage(int dam, int num) {
 	user_data.hp -= dam;
 	if (user_data.hp <= 0 && user_data.level != 1) {
-		system("cls");
+		clear_screen();
 		printf("-------------------------------------\n\n");
 		printf(":: 사망하셨습니다 ::\n");
 		printf(":: 레벨 - 1 ::\n\n");
 		user_data.maxhp -= user_data.level * 10;
 		user_data.level -= 1;
-		user_data.exp = (user_data.level - 1) * (user_data.level - 1) * 100 + 1;
+		user_data.exp = LEVELUP_EXP(user_data.level - 1) + 1;
 		user_data.hp = user_data.maxhp;
 		save();
 		mob_data[num].hp = mob_data[num].maxhp;
 		printf("-------------------------------------\n\n");
 		printf(":: System :: 메인화면으로 돌아갑니다 \n");
 		printf("\n-------------------------------------\n");
-		system("pause");
-		system("cls");
+		pause_screen();
+		clear_screen();
 		return 1;
 	}
 	else if (user_data.hp <= 0 && user_data.level == 1) {
-		system("cls");
+		clear_screen();
 		printf("-------------------------------------\n\n");
 		printf(":: 사망하셨습니다 ::\n");
 		printf(":: 레벨이 1이므로 페널티를 받지 않습니다 ::\n\n");
@@ -136,8 +136,8 @@ int damage(int dam, int num) {
 		printf("-------------------------------------\n\n");
 		printf(":: System :: 메인화면으로 돌아갑니다 \n");
 		printf("\n-------------------------------------\n");
-		system("pause");
-		system("cls");
+		pause_screen();
+		clear_screen();
 		return 1;
 	}
 	printf("-------------------------------------\n\n");
@@ -151,7 +151,7 @@ int fight(int num) {
 	int sel = 0;
 
 	while (1) {
-		system("cls");
+		clear_screen();
 		printf("------------------------------------------\n\n");
 		printf(":: Fight!! ::");
 		printf("\n\n------------------------------------------");
@@ -184,10 +184,10 @@ int attack(int num) {
 	printf("------------------------------------------\n");
 	printf("\n:: %s의 공격! ::\n\n", user_data.name);
 	printf("------------------------------------------\n\n");
-	Sleep(500);
+	sleep_ms(500);
 
 	/* 치명타: stat_data.crit 는 퍼센트(예: 0.5%). rand()%10000 으로 소수 1자리까지 판정 */
-	int pdam = stat_data.power;
+	int pdam = total_power();
 	if ((rand() % 10000) < (int)(stat_data.crit * 100)) {
 		pdam *= 2;
 		printf(":: 치명타!! ::\n");
@@ -205,22 +205,22 @@ int attack(int num) {
 /* 몬스터의 반격: 민첩(speed%) 회피 판정 후 피해 적용.
    플레이어 사망 시 COMBAT_TO_MENU, 아니면 COMBAT_ONGOING. (attack/magic 공용) */
 int monster_counterattack(int num) {
-	int dam = mob_data[num].dam - stat_data.def;
+	int dam = mob_data[num].dam - total_def();
 	if (dam < 0)
 		dam = 0;
-	Sleep(500);
+	sleep_ms(500);
 	printf("------------------------------------------\n");
 	printf("\n:: %s의 공격! ::\n\n", mob_data[num].name);
-	Sleep(500);
+	sleep_ms(500);
 	if ((rand() % 100) < stat_data.speed) {
 		printf(":: 민첩하게 공격을 회피했다! ::\n");
 		printf("\n-------------------------------------\n");
-		system("pause");
+		pause_screen();
 		return COMBAT_ONGOING;
 	}
 	if (damage(dam, num))
 		return COMBAT_TO_MENU;    /* 플레이어 사망 -> 메뉴 복귀 */
-	system("pause");
+	pause_screen();
 	return COMBAT_ONGOING;
 }
 
@@ -228,7 +228,7 @@ int monster_counterattack(int num) {
    취소/MP부족/미보유 시 턴을 소비하지 않고 전투를 계속한다. */
 int magic(int num) {
 	int i;
-	system("cls");
+	clear_screen();
 	printf("------------------------------------------\n");
 	printf(":: 마법 선택 ::   MP %d / %d\n", user_data.mp, user_data.maxmp);
 	printf("------------------------------------------\n");
@@ -244,23 +244,23 @@ int magic(int num) {
 		return COMBAT_ONGOING;
 	if (sel < 1 || sel > spell_count || !mg_data[sel - 1].learned) {
 		printf(":: 보유하지 않은 마법입니다 ::\n");
-		system("pause");
+		pause_screen();
 		return COMBAT_ONGOING;
 	}
 
 	mgs* spell = &mg_data[sel - 1];
 	if (user_data.mp < spell->mp) {
 		printf("\n:: MP가 부족합니다 (필요 %d / 보유 %d) ::\n", spell->mp, user_data.mp);
-		system("pause");
+		pause_screen();
 		return COMBAT_ONGOING;
 	}
 	user_data.mp -= spell->mp;
-	int mdam = spell->dam + stat_data.magic;
+	int mdam = spell->dam + total_magic();
 
 	printf("------------------------------------------\n");
 	printf("\n:: %s 시전! ::\n\n", spell->name);
 	printf("------------------------------------------\n\n");
-	Sleep(500);
+	sleep_ms(500);
 	int dealt = (mob_data[num].hp < mdam) ? mob_data[num].hp : mdam;
 	mob_data[num].hp -= dealt;
 	printf(":: ""%s"":에게 %d의 마법 피해! (MP -%d) ::\n\n", mob_data[num].name, dealt, spell->mp);
@@ -277,9 +277,9 @@ int hp_out(int num) {
 		printf("\n:: %s을 죽였습니다 ::\n", mob_data[num].name);
 		auto_save(mob_data[num].emin, mob_data[num].emax, mob_data[num].gmin, mob_data[num].gmax);
 		potion_earn(mob_data[num].pos, mob_data[num].pom, mob_data[num].pob);
-		system("pause");
+		pause_screen();
 		mob_data[num].hp = mob_data[num].maxhp;
-		system("cls");
+		clear_screen();
 		return 1;
 	}
 	return 0;

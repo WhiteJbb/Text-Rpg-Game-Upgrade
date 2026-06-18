@@ -16,8 +16,10 @@ FILE* open_or_warn(const char* path, const char* mode) {
 void cleanup() {
 	free(mob_data);
 	free(mg_data);
+	free(eq_data);
 	mob_data = NULL;
 	mg_data = NULL;
+	eq_data = NULL;
 }
 
 
@@ -32,5 +34,45 @@ int read_int() {
 	}
 	while ((c = getchar()) != '\n' && c != EOF);
 	return value;
+}
+
+
+/* ===== 플랫폼별 콘솔 래퍼 (Windows / POSIX 공용) ===== */
+
+/* 콘솔을 UTF-8로 설정 (Windows 전용). POSIX 터미널은 보통 UTF-8이라 no-op. */
+void init_console() {
+#ifdef _WIN32
+	SetConsoleOutputCP(CP_UTF8);
+	SetConsoleCP(CP_UTF8);
+#endif
+}
+
+/* 화면 지우기 */
+void clear_screen() {
+#ifdef _WIN32
+	system("cls");
+#else
+	system("clear");
+#endif
+}
+
+/* 키 입력 대기 */
+void pause_screen() {
+#ifdef _WIN32
+	system("pause");
+#else
+	int c;
+	printf("계속하려면 Enter 키를 누르세요...");
+	while ((c = getchar()) != '\n' && c != EOF);
+#endif
+}
+
+/* ms 밀리초 대기 */
+void sleep_ms(int ms) {
+#ifdef _WIN32
+	Sleep(ms);
+#else
+	usleep((useconds_t)ms * 1000);
+#endif
 }
 

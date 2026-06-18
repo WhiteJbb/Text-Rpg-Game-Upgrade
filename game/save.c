@@ -18,6 +18,13 @@ void user_load() {
 	if (fscanf(fp, "%d", &user_data.spells) != 1)
 		user_data.spells = 1;
 
+	/* 장비: 보유 비트마스크 + 착용 무기/방어구 인덱스 (구버전 호환: 없으면 기본값) */
+	if (fscanf(fp, "%d %d %d", &user_data.equips, &user_data.weapon, &user_data.armor) != 3) {
+		user_data.equips = 0;
+		user_data.weapon = -1;
+		user_data.armor = -1;
+	}
+
 	fclose(fp);
 
 	if (user_data.first == 0) {
@@ -109,6 +116,36 @@ void magic_load() {
 }
 
 
+void equip_load() {
+	eq_data = (equip*)malloc(sizeof(equip));
+	int i = 0;
+	FILE* fp = open_or_warn(EQUIP_PATH, "r");
+	if (fp == NULL) {
+		printf(":: 장비 데이터를 불러올 수 없어 게임을 종료합니다 ::\n");
+		exit(1);
+	}
+	while (1) {
+		equip* tmp = realloc(eq_data, sizeof(equip) * (i + 1));
+		if (tmp == NULL) break;
+		eq_data = tmp;
+		if (fscanf(fp, "%s %d %d %d %d %d", eq_data[i].name, &eq_data[i].slot,
+			&eq_data[i].power, &eq_data[i].def, &eq_data[i].magic, &eq_data[i].price) != 6)
+			break;
+		eq_data[i].owned = 0;
+		i++;
+	}
+	fclose(fp);
+	equip_count = i;
+
+	/* 보유 상태를 user_data.equips 비트마스크에서 복원 */
+	for (int j = 0; j < equip_count; j++)
+		eq_data[j].owned = (user_data.equips >> j) & 1;
+	/* 착용 인덱스 유효성 검사 (범위 밖이면 미착용) */
+	if (user_data.weapon >= equip_count) user_data.weapon = -1;
+	if (user_data.armor >= equip_count) user_data.armor = -1;
+}
+
+
 void new_user() {
 	printf("------------------------------------------------\n\n");
 	printf(":: '행성 : 지구'에 처음 입장하셨습니다 ::\n\n");
@@ -127,6 +164,9 @@ void new_user() {
 	user_data.maxmp = 100;
 	user_data.gold = 0;
 	user_data.spells = 1;   /* 파이어볼만 보유하고 시작 */
+	user_data.equips = 0;   /* 장비 없음 */
+	user_data.weapon = -1;
+	user_data.armor = -1;
 	potions_data.count = 3;
 	potionm_data.count = 1;
 	potionb_data.count = 0;
@@ -141,7 +181,7 @@ void new_user() {
 	stat_data.luck = 1;
 	stat_data.point = 0;
 	save();
-	system("cls");
+	clear_screen();
 }
 
 
@@ -153,6 +193,7 @@ void write_save_files() {
 	fprintf(fp, "%d %s %d %d %d %d %d %d %d ", user_data.first, user_data.name, user_data.gold, user_data.exp, user_data.level, user_data.hp, user_data.maxhp, user_data.mp, user_data.maxmp);
 	fprintf(fp, "%d %d %d %d %d %d ", potions_data.count, potionm_data.count, potionb_data.count, potions_data.healing, potionm_data.healing, potionb_data.healing);
 	fprintf(fp, "%d ", user_data.spells);
+	fprintf(fp, "%d %d %d ", user_data.equips, user_data.weapon, user_data.armor);
 	fclose(fp);
 
 	fp = open_or_warn(STAT_PATH, "w");
@@ -168,7 +209,7 @@ void save() {
 	printf(":: 저장중,,,, ::\n");
 	printf(":: 저장이 완료되었습니다 ::\n");
 	printf("\n-------------------------------------\n");
-	system("pause");
+	pause_screen();
 }
 
 
@@ -200,6 +241,9 @@ void clear() {
 	user_data.maxmp = 0;
 	user_data.gold = 0;
 	user_data.spells = 1;
+	user_data.equips = 0;
+	user_data.weapon = -1;
+	user_data.armor = -1;
 	potions_data.count = 0; potions_data.healing = POTION_S_HEAL;
 	potionm_data.count = 0; potionm_data.healing = POTION_M_HEAL;
 	potionb_data.count = 0; potionb_data.healing = POTION_L_HEAL;
